@@ -28,7 +28,6 @@
             "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
             "lucide-react": "https://esm.sh/lucide-react@0.292.0",
             "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
-            "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
             "firebase/database": "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"
         }
     }
@@ -55,12 +54,12 @@
             TrendingUp, Calendar, AlertCircle, Clock, Package, CheckCircle2,
             Filter, CalendarDays, Menu, X, FilePlus, UploadCloud, Check, Save
         } from 'lucide-react';
-
+        
         // ==========================================
         // FIREBASE - CONFIGURAÇÃO (NUVEM PARA A EQUIPA)
+        // Sem necessidade de autenticação
         // ==========================================
         import { initializeApp } from 'firebase/app';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
         import { getDatabase, ref, onValue, set, remove, update } from 'firebase/database';
 
         const firebaseConfig = {
@@ -74,7 +73,6 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getDatabase(app);
 
         // ==========================================
@@ -82,74 +80,73 @@
         // ==========================================
 
         function App() {
-            const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
             const [searchTerm, setSearchTerm] = useState('');
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const [previewNota, setPreviewNota] = useState(null); 
             const [notas, setNotas] = useState([]);
+            const [carregando, setCarregando] = useState(true);
             
             const [filtroTipo, setFiltroTipo] = useState('todas');
             const [filtroStatus, setFiltroStatus] = useState('todos');
             const [filtroMes, setFiltroMes] = useState('todos');
 
-            // 1. Autenticação Silenciosa (Para todos da equipa)
+            // 1. Ler Notas da Nuvem IMEDIATAMENTE (Sem login)
             useEffect(() => {
-                signInAnonymously(auth).catch(error => console.error("Erro de Auth:", error));
-                const unsubscribe = onAuthStateChanged(auth, setUser);
-                return () => unsubscribe();
-            }, []);
-
-            // 2. Ler Notas da Nuvem (Sincronização em Tempo Real)
-            useEffect(() => {
-                if (!user) return;
                 const notasRef = ref(db, 'notasFiscais');
                 const unsubscribe = onValue(notasRef, (snapshot) => {
                     const data = snapshot.val();
                     const notasArray = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
                     notasArray.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
                     setNotas(notasArray);
+                    setCarregando(false);
                 });
                 return () => unsubscribe();
-            }, [user]);
+            }, []);
 
-            // Guardar Nota Individual (NUVEM)
+            // 2. Guardar Nota Individual (NUVEM)
             const salvarNota = async (novaNota) => {
-                if (!user) return;
                 try {
                     await set(ref(db, 'notasFiscais/' + novaNota.id), novaNota);
                     setActiveTab('historico');
                 } catch (error) {
-                    alert("Erro ao salvar. O anexo pode ser demasiado grande. Tente sem o anexo ou um arquivo mais leve.");
+                    console.error("Erro ao salvar nota", error);
+                    alert("Erro ao salvar. O anexo pode ser demasiado grande.");
                 }
             };
 
-            // Guardar Lote de Notas (NUVEM)
+            // 3. Guardar Lote de Notas (NUVEM)
             const salvarLote = async (loteNotas) => {
-                if (!user) return;
                 try {
                     for (const nota of loteNotas) {
                         await set(ref(db, 'notasFiscais/' + nota.id), nota);
                     }
                     setActiveTab('historico');
                 } catch (error) {
+                    console.error("Erro ao salvar lote", error);
                     alert("Erro ao salvar lote. Algum anexo pode ser demasiado grande.");
                 }
             };
 
-            // Eliminar Nota (NUVEM)
+            // 4. Eliminar Nota (NUVEM)
             const deletarNota = async (id) => {
                 if(window.confirm('Tem a certeza que deseja eliminar este registo para toda a equipa?')) {
-                    if (!user) return;
-                    await remove(ref(db, 'notasFiscais/' + id));
+                    try {
+                        await remove(ref(db, 'notasFiscais/' + id));
+                    } catch (error) {
+                        console.error("Erro ao deletar", error);
+                    }
                 }
             };
 
-            // Mudar Status (Pendente <-> Lançada) (NUVEM)
+            // 5. Mudar Status (Pendente <-> Lançada) (NUVEM)
             const alternarStatus = async (id, statusAtual) => {
-                if (!user) return;
-                const novoStatus = statusAtual === 'pendente' ? 'lancada' : 'pendente';
-                await update(ref(db, 'notasFiscais/' + id), { status: novoStatus });
+                try {
+                    const novoStatus = statusAtual === 'pendente' ? 'lancada' : 'pendente';
+                    await update(ref(db, 'notasFiscais/' + id), { status: novoStatus });
+                } catch (error) {
+                    console.error("Erro ao alterar status", error);
+                }
             };
 
             // Cálculos para o Dashboard
@@ -212,7 +209,7 @@
                                 </button>
                                 <div className="text-center w-full mt-1">
                                     <h1 className="text-sm font-bold text-slate-800 leading-tight">Controle de Notas Lançadas</h1>
-                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">Thamiris</p>
+                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">Acesso Público</p>
                                 </div>
                             </div>
                             
@@ -257,7 +254,7 @@
                                 
                                 <img 
                                     src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" 
-                                    alt="[Image of Logo da Empresa]" 
+                                    alt="Logo da Empresa" 
                                     className="h-9 w-auto object-contain hidden sm:block"
                                 />
 
@@ -269,10 +266,10 @@
                                 </h2>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-slate-500">
-                                {user ? (
-                                    <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium border border-emerald-200"><CheckCircle2 size={14}/> Online para a Equipe</span>
+                                {carregando ? (
+                                    <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-medium border border-amber-200"><Clock size={14} className="animate-spin" /> Sincronizando...</span>
                                 ) : (
-                                    <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-medium"><Clock size={14}/> Conectando Nuvem...</span>
+                                    <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium border border-emerald-200"><CheckCircle2 size={14}/> Online para a Equipe</span>
                                 )}
                             </div>
                         </header>
@@ -283,8 +280,8 @@
                             {activeTab === 'dashboard' && (
                                 <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto animate-fade-in">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <StatCard title="Total Vendas" value={`R$ ${totalValorVendas.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`} subtitle={`${notasVenda.length} notas processadas`} icon={<TrendingUp className="text-emerald-600" size={24} />} accent="bg-emerald-500"/>
-                                        <StatCard title="Amostras Emitidas" value={`R$ ${totalValorAmostras.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`} subtitle={`${notasAmostra.length} notas de amostra`} icon={<Package className="text-purple-600" size={24} />} accent="bg-purple-500"/>
+                                        <StatCard title="Total Vendas" value={`R$ ${totalValorVendas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} subtitle={`${notasVenda.length} notas processadas`} icon={<TrendingUp className="text-emerald-600" size={24} />} accent="bg-emerald-500"/>
+                                        <StatCard title="Amostras Emitidas" value={`R$ ${totalValorAmostras.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} subtitle={`${notasAmostra.length} notas de amostra`} icon={<Package className="text-purple-600" size={24} />} accent="bg-purple-500"/>
                                         <StatCard title="A Aguardar Lançamento" value={notasPendentes.length} subtitle="Ação necessária" icon={<Clock className="text-amber-600" size={24} />} accent="bg-amber-500" highlight={notasPendentes.length > 0}/>
                                         <StatCard title="Último Movimento" value={notas.length > 0 ? formatData(notas[0].dataLancamento) : '--/--/----'} subtitle="Registo mais recente" icon={<Calendar className="text-blue-600" size={24} />} accent="bg-blue-500"/>
                                     </div>
@@ -313,7 +310,7 @@
                                                                         <div className="text-xs text-slate-500">{formatData(nota.dataLancamento)}</div>
                                                                     </td>
                                                                     <td className="px-6 py-3 text-sm text-slate-600">{nota.fornecedor || '-'}</td>
-                                                                    <td className="px-6 py-3 font-medium text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</td>
+                                                                    <td className="px-6 py-3 font-medium text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
@@ -350,7 +347,7 @@
                                 <div className="p-6 md:p-8 max-w-4xl mx-auto animate-fade-in">
                                     <div className="mb-6">
                                         <h2 className="text-2xl font-bold text-slate-800">Novo Documento</h2>
-                                        <p className="text-sm text-slate-500">Faça o upload do ficheiro XML ou PDF para preencher automaticamente.</p>
+                                        <p className="text-sm text-slate-500">Faça o upload do ficheiro XML ou PDF para extrair os dados automaticamente.</p>
                                     </div>
                                     <FormLancarNota onSave={salvarNota} />
                                 </div>
@@ -364,7 +361,7 @@
                                             <UploadCloud className="text-blue-600" />
                                             Lançamento em Massa
                                         </h2>
-                                        <p className="text-sm text-slate-500">Arraste múltiplos ficheiros. O sistema extrairá as datas e valores automaticamente.</p>
+                                        <p className="text-sm text-slate-500">Arraste múltiplos ficheiros. O sistema extrairá as datas e valores automaticamente de todos eles.</p>
                                     </div>
                                     <FormLancarLote onSave={salvarLote} />
                                 </div>
@@ -438,7 +435,7 @@
                                                                 <td className="px-6 py-4 text-sm text-slate-700 font-medium">{nota.fornecedor || 'Não informado'}</td>
                                                                 <td className="px-6 py-4"><BadgeTipo tipo={nota.tipo} /></td>
                                                                 <td className="px-6 py-4 text-sm text-slate-500">{formatData(nota.dataLancamento)}</td>
-                                                                <td className="px-6 py-4 font-bold text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</td>
+                                                                <td className="px-6 py-4 font-bold text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                                                                 <td className="px-6 py-4 text-center">
                                                                     {nota.arquivoDataUrl ? (
                                                                         <button onClick={() => setPreviewNota(nota)} className="inline-flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors" title={`Visualizar: ${nota.arquivoNome}`}><Paperclip size={18} /></button>
@@ -464,7 +461,7 @@
                                         </div>
                                         <div className="bg-slate-50 border-t border-slate-200 px-6 py-3 text-sm text-slate-600 flex justify-between shrink-0">
                                             <span>A mostrar <strong>{notasFiltradas.length}</strong> registos</span>
-                                            <span>Total Filtrado: <strong>R$ {notasFiltradas.reduce((acc, nota) => acc + parseFloat(nota.valor || 0), 0).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</strong></span>
+                                            <span>Total Filtrado: <strong>R$ {notasFiltradas.reduce((acc, nota) => acc + parseFloat(nota.valor || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
                                         </div>
                                     </div>
                                 </div>
@@ -505,6 +502,7 @@
                         const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                         let fullText = '';
                         
+                        // Lê até as primeiras 3 páginas do PDF para ser rápido
                         const maxPages = Math.min(pdf.numPages, 3);
                         for (let i = 1; i <= maxPages; i++) {
                             const page = await pdf.getPage(i);
@@ -512,22 +510,32 @@
                             fullText += textContent.items.map(item => item.str).join(' ') + ' ';
                         }
 
+                        // Busca por Data (Ex: 10/05/2024)
                         const dataMatch = fullText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                         let dataLancamento = new Date().toISOString().split('T')[0];
                         if (dataMatch) dataLancamento = `${dataMatch[3]}-${dataMatch[2]}-${dataMatch[1]}`;
 
+                        // Busca por Valor Bruto (Ex: R$ 1.500,00 ou Total 1500,00)
                         const valorMatch = fullText.match(/R\$\s*([\d\.]+,\d{2})/i) || fullText.match(/Valor.*?([\d\.]+,\d{2})/i) || fullText.match(/Total.*?([\d\.]+,\d{2})/i);
                         let valor = '';
                         if (valorMatch) valor = valorMatch[1].replace(/\./g, '').replace(',', '.');
 
-                        const numMatch = fullText.match(/(?:N[Ff][-e]?|N[oó]ta|N[úu]mero|Nº)\s*[:.-]?\s*(\d{3,})/);
+                        // Busca por Número da Nota (Ex: NF 12345, N° 12345)
+                        const numMatch = fullText.match(/(?:N[Ff][-e]?|N[oó]ta|N[úu]mero|Nº)\s*[:.-]?\s*(\d{3,})/i);
                         let numero = numMatch ? numMatch[1] : '';
 
+                        // Busca por Fornecedor (Tenta achar um CNPJ)
                         const cnpjMatch = fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
                         let fornecedor = cnpjMatch ? `CNPJ: ${cnpjMatch[0]}` : '';
 
-                        resolve({ numero: numero, fornecedor: fornecedor, dataLancamento: dataLancamento, valor: valor });
+                        resolve({
+                            numero: numero,
+                            fornecedor: fornecedor,
+                            dataLancamento: dataLancamento,
+                            valor: valor
+                        });
                     } catch (e) {
+                        console.error("Erro ao ler PDF:", e);
                         resolve({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '' });
                     }
                     return;
@@ -541,13 +549,26 @@
                     const xmlDoc = parser.parseFromString(text, "text/xml");
                     const getText = (tagName) => xmlDoc.getElementsByTagName(tagName)[0]?.textContent || '';
                     
-                    let numeroNF = getText('nNF') || getText('Numero') || getText('NfseNumero');
-                    let fornecedor = xmlDoc.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || xmlDoc.getElementsByTagName('PrestadorServico')[0]?.getElementsByTagName('RazaoSocial')[0]?.textContent || getText('RazaoSocial');
-                    let dataEmi = getText('dhEmi') || getText('dEmi') || getText('DataEmissao');
-                    let valorTotal = getText('vNF') || getText('ValorServicos') || getText('ValorLiquidoNfse');
+                    // Padrão NF-e (Produtos)
+                    let numeroNF = getText('nNF');
+                    let fornecedor = xmlDoc.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || '';
+                    let dataEmi = getText('dhEmi') || getText('dEmi');
+                    let valorTotal = getText('vNF');
+
+                    // Padrão NFS-e (Serviços) - Fallback se NF-e falhar
+                    if (!numeroNF) numeroNF = getText('Numero') || getText('NfseNumero');
+                    if (!fornecedor) fornecedor = xmlDoc.getElementsByTagName('PrestadorServico')[0]?.getElementsByTagName('RazaoSocial')[0]?.textContent || getText('RazaoSocial');
+                    if (!dataEmi) dataEmi = getText('DataEmissao');
+                    if (!valorTotal) valorTotal = getText('ValorServicos') || getText('ValorLiquidoNfse');
                     
                     const dataLancamento = dataEmi ? dataEmi.split('T')[0] : new Date().toISOString().split('T')[0];
-                    resolve({ numero: numeroNF, fornecedor: fornecedor, dataLancamento: dataLancamento, valor: valorTotal ? parseFloat(valorTotal).toFixed(2) : '' });
+                    
+                    resolve({
+                        numero: numeroNF,
+                        fornecedor: fornecedor,
+                        dataLancamento: dataLancamento,
+                        valor: valorTotal ? parseFloat(valorTotal).toFixed(2) : ''
+                    });
                 };
                 reader.readAsText(file);
             });
@@ -569,6 +590,7 @@
                 setArquivo(file);
                 setLendoArquivo(true);
                 
+                // Extrai os dados visuais
                 const dadosExtraidos = await extrairDadosDeArquivo(file);
                 if (dadosExtraidos.numero || dadosExtraidos.valor || dadosExtraidos.dataLancamento) {
                     setFormData(prev => ({
@@ -580,8 +602,10 @@
                     }));
                 }
 
+                // Extrai a base64 para o Preview do Anexo
                 const dataUrl = await lerArquivoComoBase64(file);
                 setArquivoBase64(dataUrl);
+
                 setLendoArquivo(false);
             };
 
@@ -595,6 +619,7 @@
                     dataUpload: new Date().toISOString() 
                 });
                 
+                // Reseta formulário
                 setFormData({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda', status: 'pendente' });
                 setArquivo(null);
                 setArquivoBase64(null);
@@ -620,7 +645,7 @@
                                 ) : (
                                     <div>
                                         <p className="text-slate-700 font-medium text-sm">Arraste o ficheiro .XML ou .PDF da nota aqui</p>
-                                        <p className="text-xs text-slate-500 mt-1">Ao soltar um XML ou PDF, preenchemos Data, Valor, CNPJ automaticamente.</p>
+                                        <p className="text-xs text-slate-500 mt-1">Ao soltar um XML ou PDF, tentaremos extrair Data, Valor e CNPJ automaticamente.</p>
                                     </div>
                                 )}
                             </div>
@@ -652,7 +677,7 @@
                     </div>
 
                     <div className="mt-8 pt-6 border-t border-slate-200 flex justify-end gap-3">
-                        <button type="submit" className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 text-sm"><Save size={18} /> Salvar na Nuvem</button>
+                        <button type="submit" className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 text-sm"><Save size={18} /> Guardar Nota</button>
                     </div>
                 </form>
             );
@@ -697,7 +722,7 @@
                                 <UploadCloud className="text-blue-600" size={32} />
                             </div>
                             <p className="text-slate-800 font-bold text-lg mb-1">Arraste todos os ficheiros aqui</p>
-                            <p className="text-sm text-slate-500">Selecione 5, 10, 50 PDFs/XMLs de uma vez. O sistema fará a leitura de todos.</p>
+                            <p className="text-sm text-slate-500">Selecione múltiplos PDFs ou XMLs de uma vez. O sistema fará a leitura de todos em simultâneo.</p>
                         </div>
                     </div>
 
@@ -710,7 +735,7 @@
                             <div className="max-h-80 overflow-y-auto">
                                 <table className="w-full text-left text-sm">
                                     <thead className="bg-white sticky top-0 border-b border-slate-100 shadow-sm z-10">
-                                        <tr className="text-slate-500"><th className="px-4 py-3">Ficheiro</th><th className="px-4 py-3">Nº Extraído</th><th className="px-4 py-3">Emissão</th><th className="px-4 py-3">Valor</th><th className="px-4 py-3">Ação</th></tr>
+                                        <tr className="text-slate-500"><th className="px-4 py-3">Ficheiro</th><th className="px-4 py-3">Nº Extraído</th><th className="px-4 py-3">Data Lanç.</th><th className="px-4 py-3">Valor</th><th className="px-4 py-3">Ação</th></tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {lote.map(n => (
@@ -728,7 +753,7 @@
                             <div className="p-4 bg-white border-t border-slate-200 flex justify-end gap-3">
                                 <button onClick={() => setLote([])} className="px-4 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-100 text-sm">Cancelar Lote</button>
                                 <button onClick={() => { onSave(lote); setLote([]); }} className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center gap-2">
-                                    <Save size={18} /> Salvar {lote.length} Notas na Nuvem
+                                    <Save size={18} /> Salvar {lote.length} Notas no Sistema
                                 </button>
                             </div>
                         </div>
