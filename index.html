@@ -110,7 +110,6 @@
             const [carregando, setCarregando] = useState(true);
             const [erroConexao, setErroConexao] = useState(false);
             
-            const [filtroTipo, setFiltroTipo] = useState('todas');
             const [filtroStatus, setFiltroStatus] = useState('todos');
             const [filtroMes, setFiltroMes] = useState('todos');
 
@@ -185,15 +184,24 @@
 
             const notasFiltradas = notas.filter(n => {
                 const matchBusca = n.numero.includes(searchTerm) || (n.fornecedor && n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
-                const matchTipo = filtroTipo === 'todas' || n.tipo === filtroTipo;
                 const matchStatus = filtroStatus === 'todos' || n.status === filtroStatus;
                 const mesNota = n.dataLancamento ? n.dataLancamento.split('-')[1] : null;
                 const matchMes = filtroMes === 'todos' || mesNota === filtroMes;
-                return matchBusca && matchTipo && matchStatus && matchMes;
+                return matchBusca && matchStatus && matchMes;
             });
 
-            const totalVendas = notas.filter(n => n.tipo === 'venda').reduce((acc, n) => acc + parseFloat(n.valor || 0), 0);
-            const totalAmostras = notas.filter(n => n.tipo === 'amostra').reduce((acc, n) => acc + parseFloat(n.valor || 0), 0);
+            // Agrupar as notas filtradas por data de lançamento
+            const notasAgrupadas = notasFiltradas.reduce((acc, nota) => {
+                const data = nota.dataLancamento || 'Sem Data';
+                if (!acc[data]) acc[data] = [];
+                acc[data].push(nota);
+                return acc;
+            }, {});
+            
+            // Ordenar as datas da mais recente para a mais antiga
+            const datasOrdenadas = Object.keys(notasAgrupadas).sort((a, b) => new Date(b) - new Date(a));
+
+            const totalGeral = notas.reduce((acc, n) => acc + parseFloat(n.valor || 0), 0);
             const pendentes = notas.filter(n => n.status === 'pendente').length;
 
             return (
@@ -317,8 +325,8 @@
                                 {activeTab === 'dashboard' && (
                                     <div className="space-y-10 animate-fade-in">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                            <StatCard title="Total Vendas" val={`R$ ${totalVendas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<TrendingUp size={22} className="text-blue-600"/>} bgIcon="bg-blue-50" />
-                                            <StatCard title="Total Amostras" val={`R$ ${totalAmostras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<Package size={22} className="text-indigo-600"/>} bgIcon="bg-indigo-50" />
+                                            <StatCard title="Valor Total" val={`R$ ${totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<TrendingUp size={22} className="text-blue-600"/>} bgIcon="bg-blue-50" />
+                                            <StatCard title="Notas Registradas" val={notas.length} icon={<FileText size={22} className="text-indigo-600"/>} bgIcon="bg-indigo-50" />
                                             <StatCard title="Pendentes" val={pendentes} icon={<Clock size={22} className="text-amber-600"/>} bgIcon="bg-amber-50" highlight={pendentes > 0} />
                                             <StatCard title="Última Entrada" val={notas[0] ? formatData(notas[0].dataLancamento) : '--/--'} icon={<Calendar size={22} className="text-slate-600"/>} bgIcon="bg-slate-50" />
                                         </div>
@@ -385,11 +393,10 @@
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
                                                 <input className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" placeholder="Procurar registro..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                             </div>
-                                            <div className="flex gap-1.5 p-1 bg-slate-100 rounded">
-                                                <FilterBtn active={filtroTipo === 'todas'} onClick={() => setFiltroTipo('todas')} label="Todos" />
-                                                <FilterBtn active={filtroTipo === 'venda'} onClick={() => setFiltroTipo('venda')} label="Vendas" />
-                                                <FilterBtn active={filtroTipo === 'amostra'} onClick={() => setFiltroTipo('amostra')} label="Amostras" />
-                                            </div>
+                                            <select value={filtroMes} onChange={e => setFiltroMes(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-md outline-none text-xs font-bold text-slate-600 uppercase tracking-widest hover:bg-slate-50 cursor-pointer w-full lg:w-auto">
+                                                <option value="todos">Mês Competência</option>
+                                                {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
                                         </div>
 
                                         <div className="bg-white rounded-lg border border-slate-200 card-shadow overflow-hidden flex flex-col h-full min-h-[600px]">
@@ -400,45 +407,59 @@
                                                             <th className="px-4 py-4 whitespace-nowrap">Status</th>
                                                             <th className="px-4 py-4 whitespace-nowrap">Fatura</th>
                                                             <th className="px-4 py-4 whitespace-nowrap">Parceiro Comercial</th>
-                                                            <th className="px-4 py-4 whitespace-nowrap">Lançamento</th>
                                                             <th className="px-4 py-4 text-right whitespace-nowrap">Valor Bruto</th>
                                                             <th className="px-4 py-4 text-center whitespace-nowrap">Arquivo</th>
                                                             <th className="px-4 py-4 text-right whitespace-nowrap">Gestão</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-slate-100 font-medium">
-                                                        {notasFiltradas.length === 0 ? (
-                                                            <tr><td colSpan="7" className="py-32 text-center text-slate-400 font-medium italic">Nenhum registro localizado.</td></tr>
-                                                        ) : notasFiltradas.map(n => (
-                                                            <tr key={n.id} className={`hover:bg-slate-50 transition-colors ${n.status === 'pendente' ? 'bg-amber-50/5' : ''}`}>
-                                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${n.status === 'pendente' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}>
-                                                                        {n.status}
-                                                                    </button>
-                                                                </td>
-                                                                <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">#{n.numero}</td>
-                                                                <td className="px-4 py-3 text-slate-500 font-medium truncate max-w-[180px] whitespace-nowrap">{n.fornecedor || '---'}</td>
-                                                                <td className="px-4 py-3 text-slate-500 font-bold text-xs tracking-tighter whitespace-nowrap">{formatData(n.dataLancamento)}</td>
-                                                                <td className="px-4 py-3 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                                <td className="px-4 py-3 text-center whitespace-nowrap">
-                                                                    {n.arquivoNome ? (
-                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
-                                                                            <Paperclip size={18}/>
-                                                                        </button>
-                                                                    ) : (
-                                                                        <span className="text-slate-300" title="Sem anexo">-</span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-4 py-3 flex justify-end gap-1.5 whitespace-nowrap">
-                                                                    <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Editar Data e Valor"><Pencil size={18}/></button>
-                                                                    {n.status === 'pendente' && (
-                                                                        <button onClick={() => alternarStatus(n.id, n.status)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Confirmar"><CheckCircle2 size={18}/></button>
-                                                                    )}
-                                                                    <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover"><Trash2 size={18}/></button>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
+                                                    {datasOrdenadas.length === 0 ? (
+                                                        <tbody>
+                                                            <tr><td colSpan="6" className="py-32 text-center text-slate-400 font-medium italic">Nenhum registro localizado.</td></tr>
+                                                        </tbody>
+                                                    ) : (
+                                                        datasOrdenadas.map(data => (
+                                                            <React.Fragment key={data}>
+                                                                <tbody className="bg-slate-100/50 border-b border-slate-200">
+                                                                    <tr>
+                                                                        <td colSpan="6" className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">
+                                                                            <CalendarDays size={14} className="inline-block mr-2 text-blue-600 -mt-0.5"/>
+                                                                            Lançamentos do Dia: {formatData(data)}
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                                <tbody className="divide-y divide-slate-100 font-medium bg-white">
+                                                                    {notasAgrupadas[data].map(n => (
+                                                                        <tr key={n.id} className={`hover:bg-slate-50 transition-colors ${n.status === 'pendente' ? 'bg-amber-50/5' : ''}`}>
+                                                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                                                <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${n.status === 'pendente' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}>
+                                                                                    {n.status}
+                                                                                </button>
+                                                                            </td>
+                                                                            <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">#{n.numero}</td>
+                                                                            <td className="px-4 py-3 text-slate-500 font-medium truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
+                                                                            <td className="px-4 py-3 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                                                                            <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                                                {n.arquivoNome ? (
+                                                                                    <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
+                                                                                        <Paperclip size={18}/>
+                                                                                    </button>
+                                                                                ) : (
+                                                                                    <span className="text-slate-300" title="Sem anexo">-</span>
+                                                                                )}
+                                                                            </td>
+                                                                            <td className="px-4 py-3 flex justify-end gap-1.5 whitespace-nowrap">
+                                                                                <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Editar Registro"><Pencil size={18}/></button>
+                                                                                {n.status === 'pendente' && (
+                                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Confirmar"><CheckCircle2 size={18}/></button>
+                                                                                )}
+                                                                                <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover"><Trash2 size={18}/></button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </React.Fragment>
+                                                        ))
+                                                    )}
                                                 </table>
                                             </div>
                                             <div className="px-8 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[10px] font-bold text-slate-500 tracking-widest uppercase">
@@ -476,51 +497,41 @@
                     const emitMatch = text.match(/(?:IDENTIFICA[CÇ][AÃ]O DO EMITENTE|NOME\/RAZ[AÃ]O SOCIAL|RAZ[AÃ]O SOCIAL)[:\s]+([A-ZÀ-Ú0-9\s\.\&\-]{5,60})/i);
                     if (emitMatch) emitente = emitMatch[1].trim();
 
-                    let tipo = 'venda';
-                    if (text.toLowerCase().includes('amostra') || text.toLowerCase().includes('brinde')) {
-                        tipo = 'amostra';
-                    }
-
                     return {
                         numero: numM ? numM[1] : '',
                         fornecedor: emitente,
                         dataLancamento: dataM ? `${dataM[3]}-${dataM[2]}-${dataM[1]}` : new Date().toISOString().split('T')[0],
-                        valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : '',
-                        tipo: tipo
+                        valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : ''
                     };
-                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda' }; }
+                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '' }; }
             } else {
                 const text = await file.text();
                 const xml = new DOMParser().parseFromString(text, "text/xml");
                 const get = t => xml.getElementsByTagName(t)[0]?.textContent || '';
                 
-                const natOp = get('natOp').toLowerCase();
-                const isAmostra = natOp.includes('amostra') || natOp.includes('brinde');
-
                 return {
                     numero: get('nNF') || get('Numero') || get('NfseNumero') || '',
                     fornecedor: xml.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || get('RazaoSocial') || '',
                     dataLancamento: (get('dhEmi') || get('dEmi') || get('DataEmissao'))?.split('T')[0] || new Date().toISOString().split('T')[0],
-                    valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || '',
-                    tipo: isAmostra ? 'amostra' : 'venda'
+                    valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || ''
                 };
             }
         };
 
         function FormIndividual({ onSave }) {
-            const [f, setF] = useState({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda', status: 'pendente' });
+            const [f, setF] = useState({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', status: 'pendente' });
             const [arq, setArq] = useState(null);
             const [lendo, setLendo] = useState(false);
 
             const handleFile = async (e) => {
                 const file = e.target.files[0]; if(!file) return; setLendo(true);
-                const d = await extrairDados(file); setF(p => ({...p, ...d, tipo: d.tipo || 'venda'}));
+                const d = await extrairDados(file); setF(p => ({...p, ...d}));
                 const reader = new FileReader(); reader.onload = (ev) => { setArq({ name: file.name, data: ev.target.result }); setLendo(false); };
                 reader.readAsDataURL(file);
             };
 
             return (
-                <form onSubmit={e => { e.preventDefault(); onSave({...f, id: gerarID(), arquivoNome: arq?.name, arquivoDataUrl: arq?.data, dataUpload: new Date().toISOString() }); setF({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda', status: 'pendente' }); setArq(null); }} className="bg-white p-10 rounded-lg border border-slate-200 card-shadow space-y-8 animate-fade-in">
+                <form onSubmit={e => { e.preventDefault(); onSave({...f, id: gerarID(), arquivoNome: arq?.name, arquivoDataUrl: arq?.data, dataUpload: new Date().toISOString() }); setF({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', status: 'pendente' }); setArq(null); }} className="bg-white p-10 rounded-lg border border-slate-200 card-shadow space-y-8 animate-fade-in">
                     <div className="border border-slate-200 p-8 rounded bg-slate-50/50 text-center relative group hover:bg-blue-50/20 transition-all cursor-pointer">
                         <input type="file" accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFile} />
                         <div className={`mx-auto w-12 h-12 bg-white border border-slate-200 rounded flex items-center justify-center text-slate-400 mb-3 shadow-sm transition-all group-hover:text-blue-600 ${lendo ? 'animate-pulse' : ''}`}>
@@ -530,11 +541,6 @@
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                        <div className="md:col-span-2 flex bg-slate-100 p-1 rounded border border-slate-200">
-                            <button type="button" onClick={() => setF({...f, tipo: 'venda'})} className={`flex-1 py-3 text-[10px] font-bold rounded transition-all uppercase tracking-widest ${f.tipo === 'venda' ? 'bg-white shadow text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}>Nota de Venda</button>
-                            <button type="button" onClick={() => setF({...f, tipo: 'amostra'})} className={`flex-1 py-3 text-[10px] font-bold rounded transition-all uppercase tracking-widest ${f.tipo === 'amostra' ? 'bg-white shadow text-slate-700' : 'text-slate-500 hover:text-slate-700'}`}>Amostra Comercial</button>
-                        </div>
-                        
                         <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nº Nota</label><input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} /></div>
                         <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Data Lançamento</label><input type="date" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.dataLancamento} onChange={e => setF({...f, dataLancamento: e.target.value})} /></div>
                         <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Parceiro / Fornecedor</label><input className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} /></div>
@@ -555,7 +561,7 @@
                 const novas = await Promise.all(files.map(async file => {
                     const d = await extrairDados(file);
                     const b64 = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file); });
-                    return { ...d, tipo: d.tipo || 'venda', id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, status: 'pendente', dataUpload: new Date().toISOString() };
+                    return { ...d, id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, status: 'pendente', dataUpload: new Date().toISOString() };
                 }));
                 setL(prev => [...prev, ...novas]); setP(false);
             };
@@ -580,7 +586,6 @@
                                             <tr key={x.id} className="hover:bg-slate-50 transition-colors">
                                                 <td className="px-8 py-4 text-slate-500 uppercase whitespace-nowrap">{x.arquivoNome}</td>
                                                 <td className="px-8 py-4 font-bold text-slate-800 whitespace-nowrap">#{x.numero || 'N/D'}</td>
-                                                <td className="px-8 py-4 text-slate-500 text-[9px] uppercase font-black tracking-widest">{x.tipo}</td>
                                                 <td className="px-8 py-4 text-right font-bold text-blue-700 text-xs whitespace-nowrap">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR')}</td>
                                                 <td className="px-8 py-4 text-right whitespace-nowrap"><button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16}/></button></td>
                                             </tr>
