@@ -20,22 +20,23 @@
     <!-- Importação do Babel para compilar o React no navegador -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Mapa de Módulos (Import Map) para o React e Lucide (Sem Firebase) -->
+    <!-- Mapa de Módulos (Import Map) para o React, Lucide e FIREBASE -->
     <script type="importmap">
     {
         "imports": {
             "react": "https://esm.sh/react@18.2.0",
             "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-            "lucide-react": "https://esm.sh/lucide-react@0.292.0"
+            "lucide-react": "https://esm.sh/lucide-react@0.292.0",
+            "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
+            "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
+            "firebase/database": "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"
         }
     }
     </script>
 
     <style>
-        /* Ajustes básicos de layout */
         html, body { height: 100%; margin: 0; padding: 0; background-color: #f3f4f6; }
         #root { height: 100%; }
-        /* Animação suave (Fade In) */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -46,7 +47,6 @@
 <body>
     <div id="root"></div>
 
-    <!-- Código React Completo -->
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect } from 'react';
         import { createRoot } from 'react-dom/client';
@@ -57,67 +57,99 @@
         } from 'lucide-react';
 
         // ==========================================
+        // FIREBASE - CONFIGURAÇÃO (NUVEM PARA A EQUIPA)
+        // ==========================================
+        import { initializeApp } from 'firebase/app';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+        import { getDatabase, ref, onValue, set, remove, update } from 'firebase/database';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLtWbeKw9gWD1kPd8DL_r5gG2FQ1PJBC8",
+            authDomain: "sistemanotas-523ac.firebaseapp.com",
+            databaseURL: "https://sistemanotas-523ac-default-rtdb.firebaseio.com",
+            projectId: "sistemanotas-523ac",
+            storageBucket: "sistemanotas-523ac.firebasestorage.app",
+            messagingSenderId: "120014924067",
+            appId: "1:120014924067:web:01030e38cd66f9b9de4496"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // ==========================================
         // COMPONENTE PRINCIPAL (APP)
         // ==========================================
 
         function App() {
+            const [user, setUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
             const [searchTerm, setSearchTerm] = useState('');
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-            const [previewNota, setPreviewNota] = useState(null); // Estado para o modal de visualização
-            
-            // Estado principal das Notas - Carrega do LocalStorage ao iniciar
-            const [notas, setNotas] = useState(() => {
-                const notasGuardadas = localStorage.getItem('notasFiscaisDoremus');
-                return notasGuardadas ? JSON.parse(notasGuardadas) : [];
-            });
+            const [previewNota, setPreviewNota] = useState(null); 
+            const [notas, setNotas] = useState([]);
             
             const [filtroTipo, setFiltroTipo] = useState('todas');
             const [filtroStatus, setFiltroStatus] = useState('todos');
             const [filtroMes, setFiltroMes] = useState('todos');
 
-            // Sempre que as notas mudarem, guarda no LocalStorage do navegador
+            // 1. Autenticação Silenciosa (Para todos da equipa)
             useEffect(() => {
+                signInAnonymously(auth).catch(error => console.error("Erro de Auth:", error));
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+
+            // 2. Ler Notas da Nuvem (Sincronização em Tempo Real)
+            useEffect(() => {
+                if (!user) return;
+                const notasRef = ref(db, 'notasFiscais');
+                const unsubscribe = onValue(notasRef, (snapshot) => {
+                    const data = snapshot.val();
+                    const notasArray = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                    notasArray.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
+                    setNotas(notasArray);
+                });
+                return () => unsubscribe();
+            }, [user]);
+
+            // Guardar Nota Individual (NUVEM)
+            const salvarNota = async (novaNota) => {
+                if (!user) return;
                 try {
-                    localStorage.setItem('notasFiscaisDoremus', JSON.stringify(notas));
+                    await set(ref(db, 'notasFiscais/' + novaNota.id), novaNota);
+                    setActiveTab('historico');
                 } catch (error) {
-                    if (error.name === 'QuotaExceededError' || error.code === 22) {
-                        alert("AVISO DE MEMÓRIA: O navegador está cheio! Arquivos em anexo (PDFs) ocupam muito espaço no armazenamento local. Para conseguir gravar mais notas, elimine registos antigos.");
+                    alert("Erro ao salvar. O anexo pode ser demasiado grande. Tente sem o anexo ou um arquivo mais leve.");
+                }
+            };
+
+            // Guardar Lote de Notas (NUVEM)
+            const salvarLote = async (loteNotas) => {
+                if (!user) return;
+                try {
+                    for (const nota of loteNotas) {
+                        await set(ref(db, 'notasFiscais/' + nota.id), nota);
                     }
-                }
-            }, [notas]);
-
-            // Guardar Nota Individual (Local)
-            const salvarNota = (novaNota) => {
-                setNotas(prev => {
-                    const novasNotas = [novaNota, ...prev];
-                    return novasNotas.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
-                });
-                setActiveTab('historico');
-            };
-
-            // Guardar Lote de Notas (Local)
-            const salvarLote = (loteNotas) => {
-                setNotas(prev => {
-                    const novasNotas = [...loteNotas, ...prev];
-                    return novasNotas.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
-                });
-                setActiveTab('historico');
-            };
-
-            // Eliminar Nota (Local)
-            const deletarNota = (id) => {
-                if(window.confirm('Tem a certeza que deseja eliminar este registo permanentemente?')) {
-                    setNotas(prev => prev.filter(nota => nota.id !== id));
+                    setActiveTab('historico');
+                } catch (error) {
+                    alert("Erro ao salvar lote. Algum anexo pode ser demasiado grande.");
                 }
             };
 
-            // Mudar Status (Pendente <-> Lançada) (Local)
-            const alternarStatus = (id, statusAtual) => {
+            // Eliminar Nota (NUVEM)
+            const deletarNota = async (id) => {
+                if(window.confirm('Tem a certeza que deseja eliminar este registo para toda a equipa?')) {
+                    if (!user) return;
+                    await remove(ref(db, 'notasFiscais/' + id));
+                }
+            };
+
+            // Mudar Status (Pendente <-> Lançada) (NUVEM)
+            const alternarStatus = async (id, statusAtual) => {
+                if (!user) return;
                 const novoStatus = statusAtual === 'pendente' ? 'lancada' : 'pendente';
-                setNotas(prev => prev.map(nota => 
-                    nota.id === id ? { ...nota, status: novoStatus } : nota
-                ));
+                await update(ref(db, 'notasFiscais/' + id), { status: novoStatus });
             };
 
             // Cálculos para o Dashboard
@@ -237,7 +269,11 @@
                                 </h2>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-slate-500">
-                                <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-200"><Save size={14}/> Guardado no Navegador</span>
+                                {user ? (
+                                    <span className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-medium border border-emerald-200"><CheckCircle2 size={14}/> Online para a Equipe</span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-xs font-medium"><Clock size={14}/> Conectando Nuvem...</span>
+                                )}
                             </div>
                         </header>
 
@@ -469,7 +505,6 @@
                         const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                         let fullText = '';
                         
-                        // Lê até as primeiras 3 páginas do PDF para ser rápido
                         const maxPages = Math.min(pdf.numPages, 3);
                         for (let i = 1; i <= maxPages; i++) {
                             const page = await pdf.getPage(i);
@@ -477,32 +512,22 @@
                             fullText += textContent.items.map(item => item.str).join(' ') + ' ';
                         }
 
-                        // Busca por Data (Ex: 10/05/2024)
                         const dataMatch = fullText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                         let dataLancamento = new Date().toISOString().split('T')[0];
                         if (dataMatch) dataLancamento = `${dataMatch[3]}-${dataMatch[2]}-${dataMatch[1]}`;
 
-                        // Busca por Valor Bruto (Ex: R$ 1.500,00 ou Total 1500,00)
                         const valorMatch = fullText.match(/R\$\s*([\d\.]+,\d{2})/i) || fullText.match(/Valor.*?([\d\.]+,\d{2})/i) || fullText.match(/Total.*?([\d\.]+,\d{2})/i);
                         let valor = '';
                         if (valorMatch) valor = valorMatch[1].replace(/\./g, '').replace(',', '.');
 
-                        // Busca por Número da Nota (Ex: NF 12345, N° 12345)
                         const numMatch = fullText.match(/(?:N[Ff][-e]?|N[oó]ta|N[úu]mero|Nº)\s*[:.-]?\s*(\d{3,})/);
                         let numero = numMatch ? numMatch[1] : '';
 
-                        // Busca por Fornecedor (Tenta achar um CNPJ)
                         const cnpjMatch = fullText.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/);
                         let fornecedor = cnpjMatch ? `CNPJ: ${cnpjMatch[0]}` : '';
 
-                        resolve({
-                            numero: numero,
-                            fornecedor: fornecedor,
-                            dataLancamento: dataLancamento,
-                            valor: valor
-                        });
+                        resolve({ numero: numero, fornecedor: fornecedor, dataLancamento: dataLancamento, valor: valor });
                     } catch (e) {
-                        console.error("Erro ao ler PDF:", e);
                         resolve({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '' });
                     }
                     return;
@@ -516,26 +541,13 @@
                     const xmlDoc = parser.parseFromString(text, "text/xml");
                     const getText = (tagName) => xmlDoc.getElementsByTagName(tagName)[0]?.textContent || '';
                     
-                    // Padrão NF-e (Produtos)
-                    let numeroNF = getText('nNF');
-                    let fornecedor = xmlDoc.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || '';
-                    let dataEmi = getText('dhEmi') || getText('dEmi');
-                    let valorTotal = getText('vNF');
-
-                    // Padrão NFS-e (Serviços) - Fallback se NF-e falhar
-                    if (!numeroNF) numeroNF = getText('Numero') || getText('NfseNumero');
-                    if (!fornecedor) fornecedor = xmlDoc.getElementsByTagName('PrestadorServico')[0]?.getElementsByTagName('RazaoSocial')[0]?.textContent || getText('RazaoSocial');
-                    if (!dataEmi) dataEmi = getText('DataEmissao');
-                    if (!valorTotal) valorTotal = getText('ValorServicos') || getText('ValorLiquidoNfse');
+                    let numeroNF = getText('nNF') || getText('Numero') || getText('NfseNumero');
+                    let fornecedor = xmlDoc.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || xmlDoc.getElementsByTagName('PrestadorServico')[0]?.getElementsByTagName('RazaoSocial')[0]?.textContent || getText('RazaoSocial');
+                    let dataEmi = getText('dhEmi') || getText('dEmi') || getText('DataEmissao');
+                    let valorTotal = getText('vNF') || getText('ValorServicos') || getText('ValorLiquidoNfse');
                     
                     const dataLancamento = dataEmi ? dataEmi.split('T')[0] : new Date().toISOString().split('T')[0];
-                    
-                    resolve({
-                        numero: numeroNF,
-                        fornecedor: fornecedor,
-                        dataLancamento: dataLancamento,
-                        valor: valorTotal ? parseFloat(valorTotal).toFixed(2) : ''
-                    });
+                    resolve({ numero: numeroNF, fornecedor: fornecedor, dataLancamento: dataLancamento, valor: valorTotal ? parseFloat(valorTotal).toFixed(2) : '' });
                 };
                 reader.readAsText(file);
             });
@@ -557,7 +569,6 @@
                 setArquivo(file);
                 setLendoArquivo(true);
                 
-                // Extrai os dados visuais
                 const dadosExtraidos = await extrairDadosDeArquivo(file);
                 if (dadosExtraidos.numero || dadosExtraidos.valor || dadosExtraidos.dataLancamento) {
                     setFormData(prev => ({
@@ -569,10 +580,8 @@
                     }));
                 }
 
-                // Extrai a base64 para o Preview do Anexo
                 const dataUrl = await lerArquivoComoBase64(file);
                 setArquivoBase64(dataUrl);
-
                 setLendoArquivo(false);
             };
 
@@ -586,7 +595,6 @@
                     dataUpload: new Date().toISOString() 
                 });
                 
-                // Reseta formulário
                 setFormData({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda', status: 'pendente' });
                 setArquivo(null);
                 setArquivoBase64(null);
@@ -644,7 +652,7 @@
                     </div>
 
                     <div className="mt-8 pt-6 border-t border-slate-200 flex justify-end gap-3">
-                        <button type="submit" className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 text-sm"><Save size={18} /> Guardar Nota</button>
+                        <button type="submit" className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 text-sm"><Save size={18} /> Salvar na Nuvem</button>
                     </div>
                 </form>
             );
@@ -720,7 +728,7 @@
                             <div className="p-4 bg-white border-t border-slate-200 flex justify-end gap-3">
                                 <button onClick={() => setLote([])} className="px-4 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-100 text-sm">Cancelar Lote</button>
                                 <button onClick={() => { onSave(lote); setLote([]); }} className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center gap-2">
-                                    <Save size={18} /> Guardar {lote.length} Notas no Sistema
+                                    <Save size={18} /> Salvar {lote.length} Notas na Nuvem
                                 </button>
                             </div>
                         </div>
