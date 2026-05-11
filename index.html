@@ -100,6 +100,10 @@
                     notasArray.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
                     setNotas(notasArray);
                     setCarregando(false);
+                }, (error) => {
+                    console.error("Erro do Firebase:", error);
+                    alert("Aviso: O Firebase bloqueou o acesso! Por favor, vá ao painel do Realtime Database e certifique-se de que as regras '.read' e '.write' estão como 'true' e clique em Publicar.");
+                    setCarregando(false);
                 });
                 return () => unsubscribe();
             }, []);
