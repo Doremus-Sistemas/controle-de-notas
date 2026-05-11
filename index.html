@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Notas Lançadas</title>
+    
+    <!-- Importação do Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Importação do Babel para compilar o React no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Mapa de Módulos (Import Map) para o React e Lucide (Sem Firebase) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.292.0"
+        }
+    }
+    </script>
+
+    <style>
+        /* Ajustes básicos de layout */
+        html, body { height: 100%; margin: 0; padding: 0; background-color: #f3f4f6; }
+        #root { height: 100%; }
+        /* Animação suave (Fade In) */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Código React Completo -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { 
+            Plus, List, LayoutDashboard, Upload, Trash2, Search, Paperclip,
+            TrendingUp, Calendar, AlertCircle, Clock, Package, CheckCircle2,
+            Filter, CalendarDays, Menu, X, FilePlus, UploadCloud, Check, Save
+        } from 'lucide-react';
+
+        // ==========================================
+        // COMPONENTE PRINCIPAL (APP)
+        // ==========================================
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+            
+            // Estado principal das Notas - Carrega do LocalStorage ao iniciar
+            const [notas, setNotas] = useState(() => {
+                const notasGuardadas = localStorage.getItem('notasFiscaisDoremus');
+                return notasGuardadas ? JSON.parse(notasGuardadas) : [];
+            });
+            
+            const [filtroTipo, setFiltroTipo] = useState('todas');
+            const [filtroStatus, setFiltroStatus] = useState('todos');
+            const [filtroMes, setFiltroMes] = useState('todos');
+
+            // Sempre que as notas mudarem, guarda no LocalStorage do navegador
+            useEffect(() => {
+                localStorage.setItem('notasFiscaisDoremus', JSON.stringify(notas));
+            }, [notas]);
+
+            // Guardar Nota Individual (Local)
+            const salvarNota = (novaNota) => {
+                setNotas(prev => {
+                    const novasNotas = [novaNota, ...prev];
+                    // Ordena por data de upload (mais recente primeiro)
+                    return novasNotas.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
+                });
+                setActiveTab('historico');
+            };
+
+            // Guardar Lote de Notas (Local)
+            const salvarLote = (loteNotas) => {
+                setNotas(prev => {
+                    const novasNotas = [...loteNotas, ...prev];
+                    return novasNotas.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
+                });
+                setActiveTab('historico');
+            };
+
+            // Eliminar Nota (Local)
+            const deletarNota = (id) => {
+                if(window.confirm('Tem a certeza que deseja eliminar este registo?')) {
+                    setNotas(prev => prev.filter(nota => nota.id !== id));
+                }
+            };
+
+            // Mudar Status (Pendente <-> Lançada) (Local)
+            const alternarStatus = (id, statusAtual) => {
+                const novoStatus = statusAtual === 'pendente' ? 'lancada' : 'pendente';
+                setNotas(prev => prev.map(nota => 
+                    nota.id === id ? { ...nota, status: novoStatus } : nota
+                ));
+            };
+
+            // Cálculos para o Dashboard
+            const notasVenda = notas.filter(n => n.tipo === 'venda');
+            const notasAmostra = notas.filter(n => n.tipo === 'amostra');
+            const notasPendentes = notas.filter(n => n.status === 'pendente');
+            const totalValorVendas = notasVenda.reduce((acc, nota) => acc + parseFloat(nota.valor || 0), 0);
+            const totalValorAmostras = notasAmostra.reduce((acc, nota) => acc + parseFloat(nota.valor || 0), 0);
+
+            // Filtragem da Tabela
+            const notasFiltradas = notas.filter(nota => {
+                const mesNota = nota.dataLancamento ? nota.dataLancamento.split('-')[1] : null;
+                const matchBusca = nota.numero.includes(searchTerm) || (nota.fornecedor && nota.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
+                const matchTipo = filtroTipo === 'todas' || nota.tipo === filtroTipo;
+                const matchStatus = filtroStatus === 'todos' || nota.status === filtroStatus;
+                const matchMes = filtroMes === 'todos' || mesNota === filtroMes;
+                return matchBusca && matchTipo && matchStatus && matchMes;
+            });
+
+            return (
+                <div className="h-screen bg-[#f3f4f6] flex overflow-hidden font-sans text-slate-800">
+                    
+                    {/* Menu Lateral (Sidebar) */}
+                    <aside 
+                        className={`bg-white text-slate-700 flex flex-col shadow-xl z-20 border-r border-slate-200 transition-all duration-300 ease-in-out absolute md:relative h-full overflow-hidden shrink-0
+                            ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0'}
+                        `}
+                    >
+                        {/* Container com largura fixa para evitar amassar texto */}
+                        <div className="w-64 min-w-[16rem] flex flex-col h-full bg-white">
+                            <div className="p-6 flex flex-col justify-center items-center border-b border-slate-100 min-h-[5rem] relative">
+                                <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-4 right-4 text-slate-400">
+                                    <X size={20} />
+                                </button>
+                                <div className="text-center w-full mt-1">
+                                    <h1 className="text-sm font-bold text-slate-800 leading-tight">Controle de Notas Lançadas</h1>
+                                    <p className="text-xs text-blue-600 font-semibold mt-0.5">Thamiris</p>
+                                </div>
+                            </div>
+                            
+                            <div className="px-4 py-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap overflow-hidden">
+                                Menu Principal
+                            </div>
+                            
+                            <nav className="flex-1 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+                                <MenuButton active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20} />} label="Visão Geral" />
+                                <MenuButton active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<Plus size={20} />} label="Novo Lançamento" />
+                                <MenuButton active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={20} />} label="Lançamento em Massa" badge="Novo" />
+                                <MenuButton active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20} />} label="Controle de Notas" badge={notasPendentes.length > 0 ? notasPendentes.length : null} />
+                            </nav>
+
+                            {/* Mascote 3D Animada */}
+                            <div className="mt-auto p-4 flex flex-col items-center pb-6 w-full shrink-0 group">
+                                <img 
+                                    src="https://i.postimg.cc/j29ntZXm/4768DAA3-8F2D-4780-8252-D97E005EF5C4-removebg-preview.png" 
+                                    alt="Mascote dando oi" 
+                                    onError={(e) => { e.currentTarget.src = "https://placehold.co/400x400/dbeafe/1e3a8a?text=Sua+Mascote" }}
+                                    className="w-44 h-auto drop-shadow-xl object-contain shrink-0 transform group-hover:-translate-y-3 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 ease-out cursor-pointer"
+                                />
+                                <div className="bg-blue-50 text-blue-700 text-xs p-2.5 rounded-xl mt-3 text-center shadow-sm relative w-full border border-blue-100 font-medium whitespace-normal">
+                                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-blue-50 rotate-45 border-l border-t border-blue-100"></div>
+                                    Olá! Eu ajudo-te a organizar as notas por aqui.
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Área Principal */}
+                    <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 relative">
+
+                        {/* Top Header */}
+                        <header className="bg-white border-b border-slate-200 h-16 px-4 flex items-center justify-between shrink-0 z-10 shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <button 
+                                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                                    className="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+                                    title={isSidebarOpen ? "Recolher Menu" : "Expandir Menu"}
+                                >
+                                    <Menu size={22} />
+                                </button>
+                                
+                                {/* Logo da Empresa */}
+                                <img 
+                                    src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" 
+                                    alt="[Image of Logo da Empresa]" 
+                                    className="h-9 w-auto object-contain hidden sm:block"
+                                />
+
+                                <h2 className="font-semibold text-slate-700 hidden md:block border-l border-slate-200 pl-4 ml-2">
+                                    {activeTab === 'dashboard' && 'Painel Gerencial'}
+                                    {activeTab === 'lancar' && 'Registo Individual'}
+                                    {activeTab === 'lote' && 'Importação em Lote'}
+                                    {activeTab === 'historico' && 'Base de Dados de Notas'}
+                                </h2>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-slate-500">
+                                <span className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-200"><Save size={14}/> Guardado no Navegador</span>
+                            </div>
+                        </header>
+
+                        <main className="flex-1 overflow-y-auto">
+                            
+                            {/* DASHBOARD */}
+                            {activeTab === 'dashboard' && (
+                                <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto animate-fade-in">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <StatCard title="Total Vendas" value={`R$ ${totalValorVendas.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`} subtitle={`${notasVenda.length} notas processadas`} icon={<TrendingUp className="text-emerald-600" size={24} />} accent="bg-emerald-500"/>
+                                        <StatCard title="Amostras Emitidas" value={`R$ ${totalValorAmostras.toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`} subtitle={`${notasAmostra.length} notas de amostra`} icon={<Package className="text-purple-600" size={24} />} accent="bg-purple-500"/>
+                                        <StatCard title="A Aguardar Lançamento" value={notasPendentes.length} subtitle="Ação necessária" icon={<Clock className="text-amber-600" size={24} />} accent="bg-amber-500" highlight={notasPendentes.length > 0}/>
+                                        <StatCard title="Último Movimento" value={notas.length > 0 ? formatData(notas[0].dataLancamento) : '--/--/----'} subtitle="Registo mais recente" icon={<Calendar className="text-blue-600" size={24} />} accent="bg-blue-500"/>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200">
+                                            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
+                                                <h3 className="text-lg font-semibold text-slate-800">Últimos Registos</h3>
+                                                <button onClick={() => setActiveTab('historico')} className="text-sm font-medium text-blue-600 hover:text-blue-800">Ver tudo</button>
+                                            </div>
+                                            <div className="p-0">
+                                                {notas.length === 0 ? <EmptyState /> : (
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead>
+                                                            <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                                                <th className="px-6 py-3 font-semibold">Documento</th>
+                                                                <th className="px-6 py-3 font-semibold">Fornecedor/Cliente</th>
+                                                                <th className="px-6 py-3 font-semibold text-right">Valor</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {notas.slice(0, 5).map(nota => (
+                                                                <tr key={nota.id} className="hover:bg-slate-50 transition-colors">
+                                                                    <td className="px-6 py-3">
+                                                                        <div className="font-medium text-slate-800">{nota.numero}</div>
+                                                                        <div className="text-xs text-slate-500">{formatData(nota.dataLancamento)}</div>
+                                                                    </td>
+                                                                    <td className="px-6 py-3 text-sm text-slate-600">{nota.fornecedor || '-'}</td>
+                                                                    <td className="px-6 py-3 font-medium text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+                                            <div className="px-6 py-5 border-b border-slate-100">
+                                                <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2"><Clock size={20} className="text-amber-500" /> Pendentes</h3>
+                                            </div>
+                                            <div className="p-4 flex-1">
+                                                {notasPendentes.length === 0 ? (
+                                                    <div className="flex flex-col items-center justify-center py-8"><CheckCircle2 size={40} className="text-emerald-200 mb-3" /><p className="text-slate-500 text-sm">Tudo em dia!</p></div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {notasPendentes.slice(0, 5).map(nota => (
+                                                            <div key={nota.id} className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex justify-between items-center">
+                                                                <div><div className="text-sm font-bold text-amber-900">NF {nota.numero}</div></div>
+                                                                <button onClick={() => setActiveTab('historico')} className="text-xs font-medium bg-amber-200 text-amber-800 px-3 py-1.5 rounded transition-colors hover:bg-amber-300">Resolver</button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* LANÇAR NOTA INDIVIDUAL */}
+                            {activeTab === 'lancar' && (
+                                <div className="p-6 md:p-8 max-w-4xl mx-auto animate-fade-in">
+                                    <div className="mb-6">
+                                        <h2 className="text-2xl font-bold text-slate-800">Novo Documento</h2>
+                                        <p className="text-sm text-slate-500">Faça o upload do ficheiro XML para preencher automaticamente.</p>
+                                    </div>
+                                    <FormLancarNota onSave={salvarNota} />
+                                </div>
+                            )}
+
+                            {/* LANÇAMENTO EM MASSA (LOTE) */}
+                            {activeTab === 'lote' && (
+                                <div className="p-6 md:p-8 max-w-5xl mx-auto animate-fade-in">
+                                    <div className="mb-6">
+                                        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                                            <UploadCloud className="text-blue-600" />
+                                            Lançamento em Massa
+                                        </h2>
+                                        <p className="text-sm text-slate-500">Arraste múltiplos ficheiros XML. O sistema extrairá as datas e valores automaticamente.</p>
+                                    </div>
+                                    <FormLancarLote onSave={salvarLote} />
+                                </div>
+                            )}
+
+                            {/* CONTROLE DE NOTAS (HISTÓRICO) */}
+                            {activeTab === 'historico' && (
+                                <div className="p-6 md:p-8 max-w-[1400px] mx-auto animate-fade-in flex flex-col h-full">
+                                    <div className="mb-6 space-y-4">
+                                        <h2 className="text-2xl font-bold text-slate-800">Controle de Notas</h2>
+                                        
+                                        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col lg:flex-row gap-4 justify-between items-center">
+                                            <div className="flex bg-slate-100 p-1 rounded-lg w-full lg:w-auto">
+                                                <TabFilter active={filtroTipo === 'todas'} onClick={() => setFiltroTipo('todas')} label="Todas as Notas" />
+                                                <TabFilter active={filtroTipo === 'venda'} onClick={() => setFiltroTipo('venda')} label="Apenas Vendas" />
+                                                <TabFilter active={filtroTipo === 'amostra'} onClick={() => setFiltroTipo('amostra')} label="Apenas Amostras" />
+                                            </div>
+
+                                            <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+                                                <div className="relative">
+                                                    <select value={filtroMes} onChange={(e) => setFiltroMes(e.target.value)} className="appearance-none bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-8 py-2.5 outline-none cursor-pointer">
+                                                        <option value="todos">Todos os Meses</option>
+                                                        <option value="01">Janeiro</option><option value="02">Fevereiro</option><option value="03">Março</option>
+                                                        <option value="04">Abril</option><option value="05">Maio</option><option value="06">Junho</option>
+                                                        <option value="07">Julho</option><option value="08">Agosto</option><option value="09">Setembro</option>
+                                                        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+                                                    </select>
+                                                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                </div>
+
+                                                <div className="relative">
+                                                    <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="appearance-none bg-white border border-slate-300 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-8 py-2.5 outline-none cursor-pointer">
+                                                        <option value="todos">Todos os Status</option>
+                                                        <option value="pendente">Pendente para Lançar</option>
+                                                        <option value="lancada">Já Lançada</option>
+                                                    </select>
+                                                    <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                                </div>
+
+                                                <div className="relative w-full md:w-80">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                                    <input type="text" placeholder="Procurar número ou parceiro..." className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden flex flex-col">
+                                        <div className="overflow-x-auto flex-1 h-full">
+                                            <table className="w-full text-left border-collapse min-w-[900px]">
+                                                <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
+                                                    <tr className="text-slate-600 text-xs uppercase tracking-wider">
+                                                        <th className="px-6 py-4 font-semibold">Status</th>
+                                                        <th className="px-6 py-4 font-semibold">Nº Documento</th>
+                                                        <th className="px-6 py-4 font-semibold">Parceiro de Negócio</th>
+                                                        <th className="px-6 py-4 font-semibold">Categoria</th>
+                                                        <th className="px-6 py-4 font-semibold">Data Emissão</th>
+                                                        <th className="px-6 py-4 font-semibold text-right">Valor Bruto</th>
+                                                        <th className="px-6 py-4 font-semibold text-center">Anexo</th>
+                                                        <th className="px-6 py-4 font-semibold text-right">Ações</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {notasFiltradas.length === 0 ? (
+                                                        <tr><td colSpan="8" className="px-6 py-16 text-center text-slate-500"><AlertCircle size={40} className="mx-auto text-slate-300 mb-3" /><p className="text-lg font-medium text-slate-600">Nenhum registo encontrado.</p></td></tr>
+                                                    ) : (
+                                                        notasFiltradas.map(nota => (
+                                                            <tr key={nota.id} className={`transition-colors group ${nota.status === 'pendente' ? 'bg-[#fffbeb] hover:bg-[#fef3c7]' : 'hover:bg-slate-50'}`}>
+                                                                <td className="px-6 py-4"><BadgeStatus status={nota.status} onClick={() => alternarStatus(nota.id, nota.status)} /></td>
+                                                                <td className="px-6 py-4 font-bold text-slate-800">{nota.numero}</td>
+                                                                <td className="px-6 py-4 text-sm text-slate-700 font-medium">{nota.fornecedor || 'Não informado'}</td>
+                                                                <td className="px-6 py-4"><BadgeTipo tipo={nota.tipo} /></td>
+                                                                <td className="px-6 py-4 text-sm text-slate-500">{formatData(nota.dataLancamento)}</td>
+                                                                <td className="px-6 py-4 font-bold text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    {nota.arquivoNome ? (
+                                                                        <button className="inline-flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title={nota.arquivoNome}><Paperclip size={18} /></button>
+                                                                    ) : <span className="text-slate-300">-</span>}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <button onClick={() => deletarNota(nota.id)} className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"><Trash2 size={18} /></button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div className="bg-slate-50 border-t border-slate-200 px-6 py-3 text-sm text-slate-600 flex justify-between shrink-0">
+                                            <span>A mostrar <strong>{notasFiltradas.length}</strong> registos</span>
+                                            <span>Total Filtrado: <strong>R$ {notasFiltradas.reduce((acc, nota) => acc + parseFloat(nota.valor || 0), 0).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </main>
+                    </div>
+                </div>
+            );
+        }
+
+        // ==========================================
+        // COMPONENTES DE INTERFACE & UTILITÁRIOS
+        // ==========================================
+
+        const extrairDadosDeArquivo = async (file) => {
+            return new Promise((resolve) => {
+                if (file.type !== 'text/xml' && !file.name.toLowerCase().endsWith('.xml')) {
+                    resolve({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '' });
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(text, "text/xml");
+                    const getText = (tagName) => xmlDoc.getElementsByTagName(tagName)[0]?.textContent || '';
+                    
+                    const numeroNF = getText('nNF');
+                    let fornecedor = '';
+                    const emit = xmlDoc.getElementsByTagName('emit')[0];
+                    if (emit) {
+                        const xNome = emit.getElementsByTagName('xNome')[0];
+                        if (xNome) fornecedor = xNome.textContent;
+                    }
+                    
+                    let dataEmi = getText('dhEmi') || getText('dEmi');
+                    const dataLancamento = dataEmi ? dataEmi.split('T')[0] : new Date().toISOString().split('T')[0];
+                    const valorTotal = getText('vNF');
+                    
+                    resolve({
+                        numero: numeroNF,
+                        fornecedor: fornecedor,
+                        dataLancamento: dataLancamento,
+                        valor: valorTotal ? parseFloat(valorTotal).toFixed(2) : ''
+                    });
+                };
+                reader.readAsText(file);
+            });
+        };
+
+        function FormLancarNota({ onSave }) {
+            const [formData, setFormData] = useState({
+                numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], 
+                valor: '', tipo: 'venda', status: 'pendente'
+            });
+            const [arquivo, setArquivo] = useState(null);
+            const [lendoArquivo, setLendoArquivo] = useState(false);
+
+            const handleFileChange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setArquivo(file);
+                setLendoArquivo(true);
+                const dadosExtraidos = await extrairDadosDeArquivo(file);
+                if (dadosExtraidos.numero || dadosExtraidos.valor) {
+                    setFormData(prev => ({
+                        ...prev,
+                        numero: dadosExtraidos.numero || prev.numero,
+                        fornecedor: dadosExtraidos.fornecedor || prev.fornecedor,
+                        dataLancamento: dadosExtraidos.dataLancamento || prev.dataLancamento,
+                        valor: dadosExtraidos.valor || prev.valor,
+                    }));
+                }
+                setLendoArquivo(false);
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSave({ id: crypto.randomUUID(), ...formData, arquivoNome: arquivo ? arquivo.name : null, dataUpload: new Date().toISOString() });
+                setFormData({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda', status: 'pendente' });
+                setArquivo(null);
+            };
+
+            return (
+                <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+                    <div className="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-xl">
+                        <label className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-2">
+                            <UploadCloud size={18}/> Passo 1: Anexe o ficheiro XML (Nós preenchemos o resto!)
+                        </label>
+                        <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:bg-blue-100 transition-colors cursor-pointer relative bg-white group">
+                            <input type="file" accept=".xml,.pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} />
+                            <div className="flex flex-col items-center pointer-events-none">
+                                <div className={`bg-blue-100 p-3 rounded-full shadow-sm mb-3 transition-transform ${lendoArquivo ? 'animate-bounce' : 'group-hover:scale-110'}`}>
+                                    {lendoArquivo ? <Clock className="text-blue-600 animate-spin" size={24} /> : <FilePlus className="text-blue-600" size={24} />}
+                                </div>
+                                {arquivo ? (
+                                    <div>
+                                        <p className="text-blue-700 font-bold">{arquivo.name}</p>
+                                        <p className="text-xs text-blue-500 mt-1">{lendoArquivo ? 'A ler dados do ficheiro...' : 'Leitura concluída! Reveja os campos abaixo.'}</p>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="text-slate-700 font-medium text-sm">Arraste o ficheiro .XML ou .PDF da nota aqui</p>
+                                        <p className="text-xs text-slate-500 mt-1">Ao soltar um XML, preenchemos Data, Valor, CNPJ automaticamente.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="md:col-span-2 flex flex-col md:flex-row gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <div className="flex-1 space-y-2">
+                                <label className="text-sm font-semibold text-slate-700">Categoria do Documento</label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="tipo" value="venda" checked={formData.tipo === 'venda'} onChange={(e) => setFormData({...formData, tipo: e.target.value})} className="w-4 h-4 text-blue-600" /><span className="text-sm">Nota de Venda</span></label>
+                                    <label className="flex items-center gap-2 cursor-pointer"><input type="radio" name="tipo" value="amostra" checked={formData.tipo === 'amostra'} onChange={(e) => setFormData({...formData, tipo: e.target.value})} className="w-4 h-4 text-purple-600" /><span className="text-sm">Nota de Amostra</span></label>
+                                </div>
+                            </div>
+                            <div className="flex-1 space-y-2">
+                                <label className="text-sm font-semibold text-slate-700">Status do Lançamento</label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer bg-amber-50 px-3 py-1.5 rounded-md border border-amber-200"><input type="radio" name="status" value="pendente" checked={formData.status === 'pendente'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-4 h-4 text-amber-600" /><span className="text-sm text-amber-900">Pendente</span></label>
+                                    <label className="flex items-center gap-2 cursor-pointer bg-emerald-50 px-3 py-1.5 rounded-md border border-emerald-200"><input type="radio" name="status" value="lancada" checked={formData.status === 'lancada'} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-4 h-4 text-emerald-600" /><span className="text-sm text-emerald-900">Lançada</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Número da Nota *</label><input required type="text" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm font-medium ${arquivo && formData.numero ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.numero} onChange={(e) => setFormData({...formData, numero: e.target.value})} /></div>
+                        <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Fornecedor / Parceiro</label><input type="text" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm ${arquivo && formData.fornecedor ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.fornecedor} onChange={(e) => setFormData({...formData, fornecedor: e.target.value})} /></div>
+                        <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Data de Emissão *</label><input required type="date" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm ${arquivo && formData.dataLancamento ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.dataLancamento} onChange={(e) => setFormData({...formData, dataLancamento: e.target.value})} /></div>
+                        <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Valor Bruto (R$) *</label><input required type="number" step="0.01" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm font-bold ${arquivo && formData.valor ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-slate-300 focus:border-blue-500 text-slate-700'}`} value={formData.valor} onChange={(e) => setFormData({...formData, valor: e.target.value})} /></div>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-slate-200 flex justify-end gap-3">
+                        <button type="submit" className="bg-blue-600 text-white px-8 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all flex items-center gap-2 text-sm"><Save size={18} /> Guardar Nota</button>
+                    </div>
+                </form>
+            );
+        }
+
+        function FormLancarLote({ onSave }) {
+            const [lote, setLote] = useState([]);
+            const [processando, setProcessando] = useState(false);
+
+            const handleMultipleFiles = async (e) => {
+                const files = Array.from(e.target.files);
+                if (!files.length) return;
+                setProcessando(true);
+                
+                const novasNotas = await Promise.all(files.map(async (file) => {
+                    const dados = await extrairDadosDeArquivo(file);
+                    return {
+                        id: crypto.randomUUID(),
+                        numero: dados.numero || 'Não lido',
+                        fornecedor: dados.fornecedor || 'Desconhecido',
+                        dataLancamento: dados.dataLancamento || new Date().toISOString().split('T')[0],
+                        valor: dados.valor || '0.00',
+                        tipo: 'venda',
+                        status: 'pendente',
+                        arquivoNome: file.name,
+                        dataUpload: new Date().toISOString()
+                    };
+                }));
+
+                setLote(prev => [...prev, ...novasNotas]);
+                setProcessando(false);
+            };
+
+            return (
+                <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+                    <div className="border-2 border-dashed border-blue-300 rounded-xl p-10 text-center hover:bg-blue-50 transition-colors cursor-pointer relative bg-slate-50 mb-8">
+                        <input type="file" multiple accept=".xml,.pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleMultipleFiles} />
+                        <div className="flex flex-col items-center pointer-events-none">
+                            <div className={`bg-white p-4 rounded-full shadow-sm mb-4 ${processando ? 'animate-bounce' : ''}`}>
+                                <UploadCloud className="text-blue-600" size={32} />
+                            </div>
+                            <p className="text-slate-800 font-bold text-lg mb-1">Arraste todos os ficheiros aqui</p>
+                            <p className="text-sm text-slate-500">Selecione 5, 10, 50 XMLs de uma vez. O sistema fará a leitura de todos simultaneamente.</p>
+                        </div>
+                    </div>
+
+                    {lote.length > 0 && (
+                        <div className="border border-slate-200 rounded-xl overflow-hidden animate-fade-in">
+                            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-700">Revisão do Lote ({lote.length} ficheiros prontos)</h3>
+                                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded font-medium">Marcadas como Pendentes</span>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-white sticky top-0 border-b border-slate-100 shadow-sm z-10">
+                                        <tr className="text-slate-500"><th className="px-4 py-3">Ficheiro</th><th className="px-4 py-3">Nº Extraído</th><th className="px-4 py-3">Emissão</th><th className="px-4 py-3">Valor</th><th className="px-4 py-3">Ação</th></tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {lote.map(n => (
+                                            <tr key={n.id} className="hover:bg-slate-50">
+                                                <td className="px-4 py-3 text-slate-500 flex items-center gap-2"><Paperclip size={14}/> {n.arquivoNome.substring(0,20)}...</td>
+                                                <td className="px-4 py-3 font-semibold text-slate-800">{n.numero || <span className="text-red-400">Pendente</span>}</td>
+                                                <td className="px-4 py-3">{formatData(n.dataLancamento)}</td>
+                                                <td className="px-4 py-3 font-medium">R$ {n.valor}</td>
+                                                <td className="px-4 py-3"><button onClick={() => setLote(lote.filter(x => x.id !== n.id))} className="text-red-400 hover:text-red-600"><Trash2 size={16}/></button></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="p-4 bg-white border-t border-slate-200 flex justify-end gap-3">
+                                <button onClick={() => setLote([])} className="px-4 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-100 text-sm">Cancelar Lote</button>
+                                <button onClick={() => { onSave(lote); setLote([]); }} className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                                    <Save size={18} /> Guardar {lote.length} Notas no Sistema
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function MenuButton({ active, onClick, icon, label, badge }) {
+            return (
+                <button onClick={onClick} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium ${active ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100/50' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600'}`}>
+                    <div className="flex items-center gap-3">{icon}<span>{label}</span></div>
+                    {badge && <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">{badge}</span>}
+                </button>
+            );
+        }
+
+        function StatCard({ title, value, subtitle, icon, accent, highlight }) {
+            return (
+                <div className={`bg-white rounded-xl shadow-sm border border-slate-200 relative overflow-hidden ${highlight ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
+                    <div className={`absolute top-0 left-0 w-1 h-full ${accent}`}></div>
+                    <div className="p-5 flex justify-between items-start">
+                        <div><p className="text-slate-500 text-sm font-medium mb-1">{title}</p><h3 className="text-2xl font-extrabold text-slate-800 tracking-tight">{value}</h3>{subtitle && <p className="text-xs text-slate-400 mt-2">{subtitle}</p>}</div>
+                        <div className={`p-3 rounded-lg bg-slate-50`}>{icon}</div>
+                    </div>
+                </div>
+            );
+        }
+
+        function TabFilter({ active, onClick, label }) {
+            return <button onClick={onClick} className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex-1 text-center ${active ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'}`}>{label}</button>;
+        }
+
+        function BadgeStatus({ status, onClick }) {
+            const isPendente = status === 'pendente';
+            return <button onClick={onClick} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border cursor-pointer ${isPendente ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-emerald-100 text-emerald-800 border-emerald-200'}`}>{isPendente ? <Clock size={12} /> : <CheckCircle2 size={12} />}{isPendente ? 'Pendente' : 'Lançada'}</button>;
+        }
+
+        function BadgeTipo({ tipo }) {
+            const isAmostra = tipo === 'amostra';
+            return <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${isAmostra ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{isAmostra ? <Package size={12} /> : <TrendingUp size={12} />}{isAmostra ? 'Amostra' : 'Venda'}</span>;
+        }
+
+        function EmptyState() {
+            return <div className="text-center py-12 text-slate-400"><AlertCircle size={40} className="mx-auto mb-3 opacity-30" /><p className="text-sm">Nenhuma nota para exibir.</p></div>;
+        }
+
+        function formatData(dataString) {
+            if (!dataString) return '-';
+            const parts = dataString.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dataString;
+        }
+
+        // Renderizar a aplicação
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
