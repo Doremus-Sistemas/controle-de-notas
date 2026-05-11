@@ -146,8 +146,8 @@
             const salvarEdicao = async (e) => {
                 e.preventDefault();
                 try {
-                    const { id, valor, dataLancamento } = editingNota;
-                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento });
+                    const { id, valor, dataLancamento, numero, fornecedor } = editingNota;
+                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento, numero, fornecedor });
                     setEditingNota(null);
                 } catch (e) { alert("Erro ao atualizar dados."); }
             };
@@ -205,14 +205,24 @@
                             <form onSubmit={salvarEdicao} className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200">
                                 <div className="p-6 border-b bg-slate-50 flex justify-between items-center">
                                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                        <Pencil size={18} className="text-blue-600"/> Editar Registro #{editingNota.numero}
+                                        <Pencil size={18} className="text-blue-600"/> Editar Registro
                                     </h3>
                                     <button type="button" onClick={() => setEditingNota(null)} className="p-1 hover:bg-slate-200 rounded text-slate-500"><X size={20}/></button>
                                 </div>
                                 <div className="p-6 space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nº Nota</label>
+                                            <input required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Data Lançamento</label>
+                                            <input type="date" required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
+                                        </div>
+                                    </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Data do Lançamento</label>
-                                        <input type="date" required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Parceiro / Fornecedor</label>
+                                        <input required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.fornecedor} onChange={e => setEditingNota({...editingNota, fornecedor: e.target.value})} />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Valor Bruto (R$)</label>
@@ -466,22 +476,33 @@
                     const emitMatch = text.match(/(?:IDENTIFICA[CÇ][AÃ]O DO EMITENTE|NOME\/RAZ[AÃ]O SOCIAL|RAZ[AÃ]O SOCIAL)[:\s]+([A-ZÀ-Ú0-9\s\.\&\-]{5,60})/i);
                     if (emitMatch) emitente = emitMatch[1].trim();
 
+                    let tipo = 'venda';
+                    if (text.toLowerCase().includes('amostra') || text.toLowerCase().includes('brinde')) {
+                        tipo = 'amostra';
+                    }
+
                     return {
                         numero: numM ? numM[1] : '',
                         fornecedor: emitente,
                         dataLancamento: dataM ? `${dataM[3]}-${dataM[2]}-${dataM[1]}` : new Date().toISOString().split('T')[0],
-                        valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : ''
+                        valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : '',
+                        tipo: tipo
                     };
-                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '' }; }
+                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda' }; }
             } else {
                 const text = await file.text();
                 const xml = new DOMParser().parseFromString(text, "text/xml");
                 const get = t => xml.getElementsByTagName(t)[0]?.textContent || '';
+                
+                const natOp = get('natOp').toLowerCase();
+                const isAmostra = natOp.includes('amostra') || natOp.includes('brinde');
+
                 return {
                     numero: get('nNF') || get('Numero') || get('NfseNumero') || '',
                     fornecedor: xml.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || get('RazaoSocial') || '',
                     dataLancamento: (get('dhEmi') || get('dEmi') || get('DataEmissao'))?.split('T')[0] || new Date().toISOString().split('T')[0],
-                    valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || ''
+                    valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || '',
+                    tipo: isAmostra ? 'amostra' : 'venda'
                 };
             }
         };
@@ -493,7 +514,7 @@
 
             const handleFile = async (e) => {
                 const file = e.target.files[0]; if(!file) return; setLendo(true);
-                const d = await extrairDados(file); setF(p => ({...p, ...d}));
+                const d = await extrairDados(file); setF(p => ({...p, ...d, tipo: d.tipo || 'venda'}));
                 const reader = new FileReader(); reader.onload = (ev) => { setArq({ name: file.name, data: ev.target.result }); setLendo(false); };
                 reader.readAsDataURL(file);
             };
@@ -534,7 +555,7 @@
                 const novas = await Promise.all(files.map(async file => {
                     const d = await extrairDados(file);
                     const b64 = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file); });
-                    return { ...d, id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, tipo: 'venda', status: 'pendente', dataUpload: new Date().toISOString() };
+                    return { ...d, tipo: d.tipo || 'venda', id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, status: 'pendente', dataUpload: new Date().toISOString() };
                 }));
                 setL(prev => [...prev, ...novas]); setP(false);
             };
@@ -559,6 +580,7 @@
                                             <tr key={x.id} className="hover:bg-slate-50 transition-colors">
                                                 <td className="px-8 py-4 text-slate-500 uppercase whitespace-nowrap">{x.arquivoNome}</td>
                                                 <td className="px-8 py-4 font-bold text-slate-800 whitespace-nowrap">#{x.numero || 'N/D'}</td>
+                                                <td className="px-8 py-4 text-slate-500 text-[9px] uppercase font-black tracking-widest">{x.tipo}</td>
                                                 <td className="px-8 py-4 text-right font-bold text-blue-700 text-xs whitespace-nowrap">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR')}</td>
                                                 <td className="px-8 py-4 text-right whitespace-nowrap"><button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16}/></button></td>
                                             </tr>
