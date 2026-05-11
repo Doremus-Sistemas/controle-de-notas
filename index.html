@@ -64,6 +64,7 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [searchTerm, setSearchTerm] = useState('');
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+            const [previewNota, setPreviewNota] = useState(null); // Estado para o modal de visualização
             
             // Estado principal das Notas - Carrega do LocalStorage ao iniciar
             const [notas, setNotas] = useState(() => {
@@ -77,14 +78,19 @@
 
             // Sempre que as notas mudarem, guarda no LocalStorage do navegador
             useEffect(() => {
-                localStorage.setItem('notasFiscaisDoremus', JSON.stringify(notas));
+                try {
+                    localStorage.setItem('notasFiscaisDoremus', JSON.stringify(notas));
+                } catch (error) {
+                    if (error.name === 'QuotaExceededError' || error.code === 22) {
+                        alert("AVISO DE MEMÓRIA: O navegador está cheio! Arquivos em anexo (PDFs) ocupam muito espaço no armazenamento local. Para conseguir gravar mais notas, elimine registos antigos.");
+                    }
+                }
             }, [notas]);
 
             // Guardar Nota Individual (Local)
             const salvarNota = (novaNota) => {
                 setNotas(prev => {
                     const novasNotas = [novaNota, ...prev];
-                    // Ordena por data de upload (mais recente primeiro)
                     return novasNotas.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
                 });
                 setActiveTab('historico');
@@ -101,7 +107,7 @@
 
             // Eliminar Nota (Local)
             const deletarNota = (id) => {
-                if(window.confirm('Tem a certeza que deseja eliminar este registo?')) {
+                if(window.confirm('Tem a certeza que deseja eliminar este registo permanentemente?')) {
                     setNotas(prev => prev.filter(nota => nota.id !== id));
                 }
             };
@@ -134,13 +140,39 @@
             return (
                 <div className="h-screen bg-[#f3f4f6] flex overflow-hidden font-sans text-slate-800">
                     
+                    {/* MODAL DE VISUALIZAÇÃO DO ARQUIVO */}
+                    {previewNota && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/70 p-4 sm:p-8 animate-fade-in backdrop-blur-sm">
+                            <div className="bg-white rounded-xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+                                <div className="flex justify-between items-center p-4 border-b border-slate-200 bg-slate-50">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <Paperclip size={18} className="text-blue-600" /> 
+                                        Visualização: {previewNota.arquivoNome}
+                                    </h3>
+                                    <button onClick={() => setPreviewNota(null)} className="text-slate-500 hover:bg-slate-200 hover:text-slate-800 p-2 rounded-full transition-colors">
+                                        <X size={20} />
+                                    </button>
+                                </div>
+                                <div className="flex-1 bg-slate-200 p-2 sm:p-4 overflow-hidden">
+                                    {previewNota.arquivoDataUrl ? (
+                                        <iframe src={previewNota.arquivoDataUrl} className="w-full h-full rounded shadow-sm border border-slate-300 bg-white" title="Visualização do Anexo"></iframe>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-slate-400 bg-white rounded border border-slate-300">
+                                            <AlertCircle size={48} className="mb-4 opacity-50" />
+                                            <p>Conteúdo do arquivo não foi gravado ou não está disponível.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Menu Lateral (Sidebar) */}
                     <aside 
                         className={`bg-white text-slate-700 flex flex-col shadow-xl z-20 border-r border-slate-200 transition-all duration-300 ease-in-out absolute md:relative h-full overflow-hidden shrink-0
                             ${isSidebarOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0'}
                         `}
                     >
-                        {/* Container com largura fixa para evitar amassar texto */}
                         <div className="w-64 min-w-[16rem] flex flex-col h-full bg-white">
                             <div className="p-6 flex flex-col justify-center items-center border-b border-slate-100 min-h-[5rem] relative">
                                 <button onClick={() => setIsSidebarOpen(false)} className="md:hidden absolute top-4 right-4 text-slate-400">
@@ -163,7 +195,6 @@
                                 <MenuButton active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20} />} label="Controle de Notas" badge={notasPendentes.length > 0 ? notasPendentes.length : null} />
                             </nav>
 
-                            {/* Mascote 3D Animada */}
                             <div className="mt-auto p-4 flex flex-col items-center pb-6 w-full shrink-0 group">
                                 <img 
                                     src="https://i.postimg.cc/j29ntZXm/4768DAA3-8F2D-4780-8252-D97E005EF5C4-removebg-preview.png" 
@@ -182,7 +213,6 @@
                     {/* Área Principal */}
                     <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0 relative">
 
-                        {/* Top Header */}
                         <header className="bg-white border-b border-slate-200 h-16 px-4 flex items-center justify-between shrink-0 z-10 shadow-sm">
                             <div className="flex items-center gap-4">
                                 <button 
@@ -193,7 +223,6 @@
                                     <Menu size={22} />
                                 </button>
                                 
-                                {/* Logo da Empresa */}
                                 <img 
                                     src="https://i.postimg.cc/MZyMHZbD/as-02-(1).png" 
                                     alt="[Image of Logo da Empresa]" 
@@ -269,7 +298,7 @@
                                                         {notasPendentes.slice(0, 5).map(nota => (
                                                             <div key={nota.id} className="bg-amber-50 border border-amber-100 rounded-lg p-3 flex justify-between items-center">
                                                                 <div><div className="text-sm font-bold text-amber-900">NF {nota.numero}</div></div>
-                                                                <button onClick={() => setActiveTab('historico')} className="text-xs font-medium bg-amber-200 text-amber-800 px-3 py-1.5 rounded transition-colors hover:bg-amber-300">Resolver</button>
+                                                                <button onClick={() => alternarStatus(nota.id, nota.status)} className="text-xs font-medium bg-emerald-500 text-white px-3 py-1.5 rounded transition-colors hover:bg-emerald-600 flex items-center gap-1"><Check size={14} /> Concluir</button>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -285,7 +314,7 @@
                                 <div className="p-6 md:p-8 max-w-4xl mx-auto animate-fade-in">
                                     <div className="mb-6">
                                         <h2 className="text-2xl font-bold text-slate-800">Novo Documento</h2>
-                                        <p className="text-sm text-slate-500">Faça o upload do ficheiro XML para preencher automaticamente.</p>
+                                        <p className="text-sm text-slate-500">Faça o upload do ficheiro XML ou PDF para preencher automaticamente.</p>
                                     </div>
                                     <FormLancarNota onSave={salvarNota} />
                                 </div>
@@ -299,7 +328,7 @@
                                             <UploadCloud className="text-blue-600" />
                                             Lançamento em Massa
                                         </h2>
-                                        <p className="text-sm text-slate-500">Arraste múltiplos ficheiros XML. O sistema extrairá as datas e valores automaticamente.</p>
+                                        <p className="text-sm text-slate-500">Arraste múltiplos ficheiros. O sistema extrairá as datas e valores automaticamente.</p>
                                     </div>
                                     <FormLancarLote onSave={salvarLote} />
                                 </div>
@@ -349,14 +378,14 @@
 
                                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex-1 overflow-hidden flex flex-col">
                                         <div className="overflow-x-auto flex-1 h-full">
-                                            <table className="w-full text-left border-collapse min-w-[900px]">
+                                            <table className="w-full text-left border-collapse min-w-[1000px]">
                                                 <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm outline outline-1 outline-slate-200">
                                                     <tr className="text-slate-600 text-xs uppercase tracking-wider">
                                                         <th className="px-6 py-4 font-semibold">Status</th>
                                                         <th className="px-6 py-4 font-semibold">Nº Documento</th>
                                                         <th className="px-6 py-4 font-semibold">Parceiro de Negócio</th>
                                                         <th className="px-6 py-4 font-semibold">Categoria</th>
-                                                        <th className="px-6 py-4 font-semibold">Data Emissão</th>
+                                                        <th className="px-6 py-4 font-semibold">Data do Lançamento</th>
                                                         <th className="px-6 py-4 font-semibold text-right">Valor Bruto</th>
                                                         <th className="px-6 py-4 font-semibold text-center">Anexo</th>
                                                         <th className="px-6 py-4 font-semibold text-right">Ações</th>
@@ -375,12 +404,21 @@
                                                                 <td className="px-6 py-4 text-sm text-slate-500">{formatData(nota.dataLancamento)}</td>
                                                                 <td className="px-6 py-4 font-bold text-slate-800 text-right">R$ {parseFloat(nota.valor).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}</td>
                                                                 <td className="px-6 py-4 text-center">
-                                                                    {nota.arquivoNome ? (
-                                                                        <button className="inline-flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title={nota.arquivoNome}><Paperclip size={18} /></button>
-                                                                    ) : <span className="text-slate-300">-</span>}
+                                                                    {nota.arquivoDataUrl ? (
+                                                                        <button onClick={() => setPreviewNota(nota)} className="inline-flex items-center justify-center p-2 rounded-lg text-blue-600 hover:bg-blue-100 transition-colors" title={`Visualizar: ${nota.arquivoNome}`}><Paperclip size={18} /></button>
+                                                                    ) : <span className="text-slate-300" title="Sem anexo guardado">-</span>}
                                                                 </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <button onClick={() => deletarNota(nota.id)} className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors"><Trash2 size={18} /></button>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex justify-end gap-2">
+                                                                        {nota.status === 'pendente' && (
+                                                                            <button onClick={() => alternarStatus(nota.id, nota.status)} className="text-emerald-500 hover:text-emerald-700 p-2 rounded-lg hover:bg-emerald-100 transition-colors" title="Marcar como Concluída">
+                                                                                <CheckCircle2 size={18} />
+                                                                            </button>
+                                                                        )}
+                                                                        <button onClick={() => deletarNota(nota.id)} className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors" title="Excluir Nota">
+                                                                            <Trash2 size={18} />
+                                                                        </button>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         ))
@@ -404,6 +442,15 @@
         // ==========================================
         // COMPONENTES DE INTERFACE & UTILITÁRIOS
         // ==========================================
+
+        const lerArquivoComoBase64 = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
+        };
 
         const extrairDadosDeArquivo = async (file) => {
             return new Promise(async (resolve) => {
@@ -500,15 +547,19 @@
                 valor: '', tipo: 'venda', status: 'pendente'
             });
             const [arquivo, setArquivo] = useState(null);
+            const [arquivoBase64, setArquivoBase64] = useState(null);
             const [lendoArquivo, setLendoArquivo] = useState(false);
 
             const handleFileChange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+                
                 setArquivo(file);
                 setLendoArquivo(true);
+                
+                // Extrai os dados visuais
                 const dadosExtraidos = await extrairDadosDeArquivo(file);
-                if (dadosExtraidos.numero || dadosExtraidos.valor) {
+                if (dadosExtraidos.numero || dadosExtraidos.valor || dadosExtraidos.dataLancamento) {
                     setFormData(prev => ({
                         ...prev,
                         numero: dadosExtraidos.numero || prev.numero,
@@ -517,21 +568,35 @@
                         valor: dadosExtraidos.valor || prev.valor,
                     }));
                 }
+
+                // Extrai a base64 para o Preview do Anexo
+                const dataUrl = await lerArquivoComoBase64(file);
+                setArquivoBase64(dataUrl);
+
                 setLendoArquivo(false);
             };
 
             const handleSubmit = (e) => {
                 e.preventDefault();
-                onSave({ id: crypto.randomUUID(), ...formData, arquivoNome: arquivo ? arquivo.name : null, dataUpload: new Date().toISOString() });
+                onSave({ 
+                    id: crypto.randomUUID(), 
+                    ...formData, 
+                    arquivoNome: arquivo ? arquivo.name : null, 
+                    arquivoDataUrl: arquivoBase64,
+                    dataUpload: new Date().toISOString() 
+                });
+                
+                // Reseta formulário
                 setFormData({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', tipo: 'venda', status: 'pendente' });
                 setArquivo(null);
+                setArquivoBase64(null);
             };
 
             return (
                 <form onSubmit={handleSubmit} className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
                     <div className="mb-8 p-6 bg-blue-50 border border-blue-100 rounded-xl">
                         <label className="text-sm font-bold text-blue-900 flex items-center gap-2 mb-2">
-                            <UploadCloud size={18}/> Passo 1: Anexe o ficheiro XML (Nós preenchemos o resto!)
+                            <UploadCloud size={18}/> Passo 1: Anexe o ficheiro (Nós preenchemos o resto!)
                         </label>
                         <div className="border-2 border-dashed border-blue-300 rounded-xl p-8 text-center hover:bg-blue-100 transition-colors cursor-pointer relative bg-white group">
                             <input type="file" accept=".xml,.pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} />
@@ -542,12 +607,12 @@
                                 {arquivo ? (
                                     <div>
                                         <p className="text-blue-700 font-bold">{arquivo.name}</p>
-                                        <p className="text-xs text-blue-500 mt-1">{lendoArquivo ? 'A ler dados do ficheiro...' : 'Leitura concluída! Reveja os campos abaixo.'}</p>
+                                        <p className="text-xs text-blue-500 mt-1">{lendoArquivo ? 'A extrair dados do ficheiro...' : 'Leitura concluída! Reveja os campos abaixo.'}</p>
                                     </div>
                                 ) : (
                                     <div>
                                         <p className="text-slate-700 font-medium text-sm">Arraste o ficheiro .XML ou .PDF da nota aqui</p>
-                                        <p className="text-xs text-slate-500 mt-1">Ao soltar um XML, preenchemos Data, Valor, CNPJ automaticamente.</p>
+                                        <p className="text-xs text-slate-500 mt-1">Ao soltar um XML ou PDF, preenchemos Data, Valor, CNPJ automaticamente.</p>
                                     </div>
                                 )}
                             </div>
@@ -574,7 +639,7 @@
 
                         <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Número da Nota *</label><input required type="text" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm font-medium ${arquivo && formData.numero ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.numero} onChange={(e) => setFormData({...formData, numero: e.target.value})} /></div>
                         <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Fornecedor / Parceiro</label><input type="text" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm ${arquivo && formData.fornecedor ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.fornecedor} onChange={(e) => setFormData({...formData, fornecedor: e.target.value})} /></div>
-                        <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Data de Emissão *</label><input required type="date" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm ${arquivo && formData.dataLancamento ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.dataLancamento} onChange={(e) => setFormData({...formData, dataLancamento: e.target.value})} /></div>
+                        <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Data do Lançamento *</label><input required type="date" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm ${arquivo && formData.dataLancamento ? 'border-emerald-400 bg-emerald-50' : 'border-slate-300 focus:border-blue-500'}`} value={formData.dataLancamento} onChange={(e) => setFormData({...formData, dataLancamento: e.target.value})} /></div>
                         <div className="space-y-2"><label className="text-sm font-semibold text-slate-700">Valor Bruto (R$) *</label><input required type="number" step="0.01" className={`w-full px-4 py-2.5 rounded-lg border outline-none text-sm font-bold ${arquivo && formData.valor ? 'border-emerald-400 bg-emerald-50 text-emerald-800' : 'border-slate-300 focus:border-blue-500 text-slate-700'}`} value={formData.valor} onChange={(e) => setFormData({...formData, valor: e.target.value})} /></div>
                     </div>
 
@@ -596,6 +661,7 @@
                 
                 const novasNotas = await Promise.all(files.map(async (file) => {
                     const dados = await extrairDadosDeArquivo(file);
+                    const base64 = await lerArquivoComoBase64(file);
                     return {
                         id: crypto.randomUUID(),
                         numero: dados.numero || 'Não lido',
@@ -605,6 +671,7 @@
                         tipo: 'venda',
                         status: 'pendente',
                         arquivoNome: file.name,
+                        arquivoDataUrl: base64,
                         dataUpload: new Date().toISOString()
                     };
                 }));
@@ -622,7 +689,7 @@
                                 <UploadCloud className="text-blue-600" size={32} />
                             </div>
                             <p className="text-slate-800 font-bold text-lg mb-1">Arraste todos os ficheiros aqui</p>
-                            <p className="text-sm text-slate-500">Selecione 5, 10, 50 XMLs de uma vez. O sistema fará a leitura de todos simultaneamente.</p>
+                            <p className="text-sm text-slate-500">Selecione 5, 10, 50 PDFs/XMLs de uma vez. O sistema fará a leitura de todos.</p>
                         </div>
                     </div>
 
