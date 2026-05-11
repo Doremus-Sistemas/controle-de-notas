@@ -46,7 +46,6 @@
         }
         #root { height: 100%; }
 
-        /* Estilização Profissional de Scroll */
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
@@ -79,13 +78,13 @@
             Plus, List, LayoutDashboard, Upload, Trash2, Search, Paperclip,
             TrendingUp, Calendar, AlertCircle, Clock, Package, CheckCircle2,
             Filter, CalendarDays, Menu, X, FilePlus, UploadCloud, Check, Save,
-            ArrowRight, RefreshCw, FileText, Briefcase, Settings
+            ArrowRight, RefreshCw, FileText, Briefcase, Pencil, XCircle
         } from 'lucide-react';
         
         import { initializeApp } from 'firebase/app';
         import { getDatabase, ref, onValue, set, remove, update, get } from 'firebase/database';
 
-        // CONFIGURAÇÃO FIREBASE OFICIAL (sistemanotas-523ac)
+        // CONFIGURAÇÃO FIREBASE OFICIAL
         const firebaseConfig = {
             apiKey: "AIzaSyBLtWbeKw9gWD1kPd8DL_r5gG2FQ1PJBC8",
             authDomain: "sistemanotas-523ac.firebaseapp.com",
@@ -106,6 +105,7 @@
             const [searchTerm, setSearchTerm] = useState('');
             const [isSidebarOpen, setIsSidebarOpen] = useState(true);
             const [previewNota, setPreviewNota] = useState(null); 
+            const [editingNota, setEditingNota] = useState(null); 
             const [notas, setNotas] = useState([]);
             const [carregando, setCarregando] = useState(true);
             const [erroConexao, setErroConexao] = useState(false);
@@ -122,7 +122,11 @@
                     notasArray.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
                     setNotas(notasArray);
                     setCarregando(false);
-                }, (err) => setErroConexao(true));
+                    setErroConexao(false);
+                }, (err) => {
+                    setErroConexao(true);
+                    setCarregando(false);
+                });
                 return () => unsubscribe();
             }, []);
 
@@ -137,6 +141,15 @@
                     if (base64) await set(ref(db, 'arquivos/' + id), base64);
                     setActiveTab('historico');
                 } catch (e) { alert("Erro de sincronização."); }
+            };
+
+            const salvarEdicao = async (e) => {
+                e.preventDefault();
+                try {
+                    const { id, valor, dataLancamento } = editingNota;
+                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento });
+                    setEditingNota(null);
+                } catch (e) { alert("Erro ao atualizar dados."); }
             };
 
             const salvarLote = async (lote) => {
@@ -164,7 +177,7 @@
                     if (snap.exists()) {
                         setPreviewNota({ ...nota, arquivoDataUrl: snap.val(), carregandoAnexo: false });
                     } else {
-                        alert("Arquivo indisponível.");
+                        alert("Arquivo indisponível. Talvez esta nota tenha sido lançada sem anexo.");
                         setPreviewNota(null);
                     }
                 } catch (e) { setPreviewNota(null); }
@@ -186,29 +199,53 @@
             return (
                 <div className="flex h-screen overflow-hidden">
                     
-                    {/* MODAL DE VISUALIZAÇÃO PROFISSIONAL */}
+                    {/* MODAL DE EDIÇÃO RÁPIDA */}
+                    {editingNota && (
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+                            <form onSubmit={salvarEdicao} className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200">
+                                <div className="p-6 border-b bg-slate-50 flex justify-between items-center">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <Pencil size={18} className="text-blue-600"/> Editar Registro #{editingNota.numero}
+                                    </h3>
+                                    <button type="button" onClick={() => setEditingNota(null)} className="p-1 hover:bg-slate-200 rounded text-slate-500"><X size={20}/></button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Data do Lançamento</label>
+                                        <input type="date" required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Valor Bruto (R$)</label>
+                                        <input type="number" step="0.01" required className="w-full border p-3 rounded font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-50 border-t flex gap-3">
+                                    <button type="button" onClick={() => setEditingNota(null)} className="flex-1 py-3 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded transition-all">Cancelar</button>
+                                    <button type="submit" className="flex-1 py-3 text-xs font-bold bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md shadow-blue-100 transition-all uppercase">Gravar Alterações</button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    {/* MODAL DE VISUALIZAÇÃO PDF */}
                     {previewNota && (
                         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-10 animate-fade-in">
-                            <div className="bg-white rounded-lg w-full max-w-6xl h-full flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+                            <div className="bg-white rounded-lg w-full max-w-6xl h-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
                                 <div className="flex justify-between items-center px-6 py-4 border-b bg-slate-50">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-600 text-white rounded">
-                                            <FileText size={18}/>
-                                        </div>
+                                        <div className="p-2 bg-blue-600 text-white rounded"><FileText size={18}/></div>
                                         <div>
                                             <h3 className="text-sm font-semibold text-slate-800">{previewNota.arquivoNome}</h3>
-                                            <p className="text-[11px] text-slate-500 font-medium">DOCUMENTO Nº {previewNota.numero} • {previewNota.fornecedor}</p>
+                                            <p className="text-[11px] text-slate-500 font-medium tracking-tight">DATA: {formatData(previewNota.dataLancamento)} • #{previewNota.numero}</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => setPreviewNota(null)} className="p-2 hover:bg-slate-200 rounded-md transition-all">
-                                        <X size={20} className="text-slate-500" />
-                                    </button>
+                                    <button onClick={() => setPreviewNota(null)} className="p-2 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded-md transition-all"><X size={20}/></button>
                                 </div>
                                 <div className="flex-1 bg-slate-100 p-4 overflow-hidden flex items-center justify-center">
                                     {previewNota.carregandoAnexo ? (
                                         <div className="flex flex-col items-center gap-3">
                                             <RefreshCw className="animate-spin text-blue-600" size={32}/>
-                                            <span className="text-xs font-semibold text-slate-500 tracking-wide uppercase">A processar ficheiro...</span>
+                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">A aceder à Cloud...</span>
                                         </div>
                                     ) : <iframe src={previewNota.arquivoDataUrl} className="w-full h-full rounded border border-slate-300 bg-white"></iframe>}
                                 </div>
@@ -216,7 +253,7 @@
                         </div>
                     )}
 
-                    {/* SIDEBAR CORPORATIVA */}
+                    {/* SIDEBAR */}
                     <aside className={`bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full md:translate-x-0 md:w-20'} z-50 overflow-hidden`}>
                         <div className="p-6 flex items-center gap-3 border-b border-slate-100 h-20">
                             <div className="w-8 h-8 bg-blue-700 rounded flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
@@ -226,20 +263,20 @@
                         </div>
                         
                         <nav className="flex-1 py-6">
-                            <div className={`px-6 mb-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Painel de Controle</div>
-                            <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20}/>} label="Dashboard" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<Plus size={20}/>} label="Novo Registro" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={20}/>} label="Importação em Lote" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20}/>} label="Base de Dados" expanded={isSidebarOpen} badge={notas.filter(n=>n.status==='pendente').length} />
+                            <div className={`px-6 mb-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Plataforma</div>
+                            <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20} className="text-blue-500"/>} label="Dashboard" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<Plus size={20} className="text-emerald-500"/>} label="Novo Registro" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={20} className="text-indigo-500"/>} label="Importação Lote" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20} className="text-amber-500"/>} label="Base de Dados" expanded={isSidebarOpen} badge={notas.filter(n=>n.status==='pendente').length} />
                         </nav>
 
-                        {/* ÁREA DA MASCOTE - Estilo Suporte Profissional */}
+                        {/* MASCOTE PROFISSIONAL MAIOR */}
                         <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
                             <div className={`flex flex-col items-center text-center ${!isSidebarOpen && 'opacity-0'}`}>
-                                <img src="https://i.postimg.cc/j29ntZXm/4768DAA3-8F2D-4780-8252-D97E005EF5C4-removebg-preview.png" className="w-28 hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
-                                <div className="mt-2 bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+                                <img src="https://i.postimg.cc/j29ntZXm/4768DAA3-8F2D-4780-8252-D97E005EF5C4-removebg-preview.png" className="w-40 hover:scale-105 transition-transform duration-300 drop-shadow-sm -mt-8" alt="Assistente" />
+                                <div className="mt-2 bg-white w-full border border-slate-200 p-3 rounded-lg shadow-sm">
                                     <p className="text-[10px] font-bold text-slate-700 leading-tight uppercase tracking-tight">Suporte Técnico</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 font-medium">Monitorização ativa dos lançamentos e sincronização cloud.</p>
+                                    <p className="text-[11px] text-slate-500 mt-1 font-medium italic">Sincronização em tempo real ativa.</p>
                                 </div>
                             </div>
                         </div>
@@ -253,17 +290,14 @@
                                     <Menu size={20}/>
                                 </button>
                                 <div className="h-10 w-px bg-slate-200 hidden md:block"></div>
-                                {/* LOGO ATUALIZADA CONFORME SOLICITAÇÃO */}
                                 <a href='https://postimg.cc/qgvMZTFh' target='_blank' className="hidden sm:block">
-                                    <img src='https://i.postimg.cc/MZyMHZbD/as-02-(1).png' className="h-8" border='0' alt='Logo Corporativa' />
+                                    <img src='https://i.postimg.cc/MZyMHZbD/as-02-(1).png' className="h-8" border='0' alt='Logo' />
                                 </a>
                             </div>
                             
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-full border border-slate-100 uppercase tracking-widest">
-                                    {carregando ? <RefreshCw size={14} className="animate-spin text-blue-500"/> : <CheckCircle2 size={14} className="text-emerald-500"/>}
-                                    {carregando ? 'Sincronizando' : 'Cloud Conectada'}
-                                </div>
+                            <div className="flex items-center gap-4 text-[11px] font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-full border border-slate-100 uppercase tracking-widest">
+                                {carregando ? <RefreshCw size={14} className="animate-spin text-blue-500"/> : <CheckCircle2 size={14} className="text-emerald-500"/>}
+                                {carregando ? 'Sincronizando' : 'Cloud Conectada'}
                             </div>
                         </header>
 
@@ -273,34 +307,44 @@
                                 {activeTab === 'dashboard' && (
                                     <div className="space-y-10 animate-fade-in">
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                            <StatCard title="Volume de Vendas" val={`R$ ${totalVendas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<TrendingUp size={22}/>} color="text-blue-600" />
-                                            <StatCard title="Amostras" val={`R$ ${totalAmostras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<Package size={22}/>} color="text-slate-600" />
-                                            <StatCard title="Pendentes" val={pendentes} icon={<Clock size={22}/>} color="text-amber-600" highlight={pendentes > 0} />
-                                            <StatCard title="Último Lançamento" val={notas[0] ? formatData(notas[0].dataLancamento) : '--/--'} icon={<Calendar size={22}/>} color="text-slate-500" />
+                                            <StatCard title="Total Vendas" val={`R$ ${totalVendas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<TrendingUp size={22} className="text-blue-600"/>} bgIcon="bg-blue-50" />
+                                            <StatCard title="Total Amostras" val={`R$ ${totalAmostras.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<Package size={22} className="text-indigo-600"/>} bgIcon="bg-indigo-50" />
+                                            <StatCard title="Pendentes" val={pendentes} icon={<Clock size={22} className="text-amber-600"/>} bgIcon="bg-amber-50" highlight={pendentes > 0} />
+                                            <StatCard title="Última Entrada" val={notas[0] ? formatData(notas[0].dataLancamento) : '--/--'} icon={<Calendar size={22} className="text-slate-600"/>} bgIcon="bg-slate-50" />
                                         </div>
 
-                                        <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-                                            <div className="px-8 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+                                        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                            <div className="px-6 lg:px-8 py-5 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
                                                 <h3 className="text-xs font-bold text-slate-800 uppercase tracking-[0.1em]">Registros Recentes</h3>
                                                 <button onClick={() => setActiveTab('historico')} className="text-blue-700 text-xs font-bold hover:underline uppercase">Tabela Geral</button>
                                             </div>
                                             <div className="overflow-x-auto">
                                                 <table className="w-full text-left text-sm">
-                                                    <thead>
-                                                        <tr className="text-slate-400 font-semibold border-b border-slate-100 uppercase text-[10px] tracking-widest bg-slate-50/20">
-                                                            <th className="px-8 py-4">Fatura</th>
-                                                            <th className="px-8 py-4">Parceiro</th>
-                                                            <th className="px-8 py-4 text-right">Valor</th>
+                                                    <thead className="text-slate-400 font-semibold border-b border-slate-100 uppercase text-[10px] tracking-widest bg-slate-50/10">
+                                                        <tr>
+                                                            <th className="px-6 py-4 whitespace-nowrap">Fatura</th>
+                                                            <th className="px-6 py-4 whitespace-nowrap">Lançamento</th>
+                                                            <th className="px-6 py-4 whitespace-nowrap">Parceiro</th>
+                                                            <th className="px-6 py-4 text-center whitespace-nowrap">Arquivo</th>
+                                                            <th className="px-6 py-4 text-right whitespace-nowrap">Valor</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100">
-                                                        {notas.length === 0 ? (
-                                                            <tr><td colSpan="3" className="py-20 text-center text-slate-400 italic">Nenhum dado sincronizado.</td></tr>
-                                                        ) : notas.slice(0, 6).map(n => (
+                                                        {notas.slice(0, 8).map(n => (
                                                             <tr key={n.id} className="hover:bg-slate-50/80 transition-colors">
-                                                                <td className="px-8 py-4 font-bold text-slate-700">#{n.numero}</td>
-                                                                <td className="px-8 py-4 text-slate-500 font-medium">{n.fornecedor || '---'}</td>
-                                                                <td className="px-8 py-4 text-right font-bold text-slate-800">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                                                                <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">#{n.numero}</td>
+                                                                <td className="px-6 py-4 text-slate-500 font-semibold text-xs tracking-tighter whitespace-nowrap">{formatData(n.dataLancamento)}</td>
+                                                                <td className="px-6 py-4 text-slate-500 font-medium truncate max-w-[200px]">{n.fornecedor || '---'}</td>
+                                                                <td className="px-6 py-4 text-center whitespace-nowrap">
+                                                                    {n.arquivoNome ? (
+                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
+                                                                            <Paperclip size={16}/>
+                                                                        </button>
+                                                                    ) : (
+                                                                        <span className="text-slate-300" title="Sem anexo">-</span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -312,20 +356,14 @@
 
                                 {activeTab === 'lancar' && (
                                     <div className="max-w-4xl mx-auto animate-fade-in">
-                                        <div className="mb-10">
-                                            <h2 className="text-2xl font-bold text-slate-800 tracking-tight uppercase">Entrada de Documento</h2>
-                                            <p className="text-sm text-slate-500 mt-1 font-medium italic">O sistema extrairá os dados dos campos automaticamente.</p>
-                                        </div>
+                                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight uppercase mb-8">Entrada de Nota Individual</h2>
                                         <FormIndividual onSave={salvarNota} />
                                     </div>
                                 )}
 
                                 {activeTab === 'lote' && (
                                     <div className="max-w-5xl mx-auto animate-fade-in">
-                                        <div className="mb-10 text-center uppercase tracking-tight">
-                                            <h2 className="text-2xl font-bold text-slate-800">Sincronização em Massa</h2>
-                                            <p className="text-sm text-slate-500 mt-2 font-medium tracking-normal normal-case">Processamento simultâneo de múltiplos documentos XML/PDF.</p>
-                                        </div>
+                                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight uppercase mb-8 text-center">Processamento Múltiplo Cloud</h2>
                                         <FormLote onSave={salvarLote} />
                                     </div>
                                 )}
@@ -335,7 +373,7 @@
                                         <div className="flex flex-col lg:flex-row gap-4 items-center bg-white p-6 rounded-lg border border-slate-200 card-shadow">
                                             <div className="flex-1 w-full relative">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                                                <input className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" placeholder="Filtrar por nº da nota ou parceiro..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                                <input className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" placeholder="Procurar registro..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                             </div>
                                             <div className="flex gap-1.5 p-1 bg-slate-100 rounded">
                                                 <FilterBtn active={filtroTipo === 'todas'} onClick={() => setFiltroTipo('todas')} label="Todos" />
@@ -346,16 +384,16 @@
 
                                         <div className="bg-white rounded-lg border border-slate-200 card-shadow overflow-hidden flex flex-col h-full min-h-[600px]">
                                             <div className="overflow-x-auto flex-1">
-                                                <table className="w-full text-left text-sm border-collapse min-w-[1100px]">
+                                                <table className="w-full text-left text-sm border-collapse min-w-[900px]">
                                                     <thead className="bg-slate-50/80 border-b border-slate-200 font-bold text-slate-500 uppercase text-[10px] tracking-widest sticky top-0 z-10 backdrop-blur-md">
                                                         <tr>
-                                                            <th className="px-6 py-4">Status</th>
-                                                            <th className="px-6 py-4">Fatura</th>
-                                                            <th className="px-6 py-4">Parceiro Comercial</th>
-                                                            <th className="px-6 py-4">Data Lanç.</th>
-                                                            <th className="px-6 py-4 text-right">Valor Total</th>
-                                                            <th className="px-6 py-4 text-center">Arquivo</th>
-                                                            <th className="px-6 py-4 text-right">Ações</th>
+                                                            <th className="px-4 py-4 whitespace-nowrap">Status</th>
+                                                            <th className="px-4 py-4 whitespace-nowrap">Fatura</th>
+                                                            <th className="px-4 py-4 whitespace-nowrap">Parceiro Comercial</th>
+                                                            <th className="px-4 py-4 whitespace-nowrap">Lançamento</th>
+                                                            <th className="px-4 py-4 text-right whitespace-nowrap">Valor Bruto</th>
+                                                            <th className="px-4 py-4 text-center whitespace-nowrap">Arquivo</th>
+                                                            <th className="px-4 py-4 text-right whitespace-nowrap">Gestão</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-slate-100 font-medium">
@@ -363,29 +401,30 @@
                                                             <tr><td colSpan="7" className="py-32 text-center text-slate-400 font-medium italic">Nenhum registro localizado.</td></tr>
                                                         ) : notasFiltradas.map(n => (
                                                             <tr key={n.id} className={`hover:bg-slate-50 transition-colors ${n.status === 'pendente' ? 'bg-amber-50/5' : ''}`}>
-                                                                <td className="px-6 py-4">
-                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${n.status === 'pendente' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${n.status === 'pendente' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}>
                                                                         {n.status}
                                                                     </button>
                                                                 </td>
-                                                                <td className="px-6 py-4 font-bold text-slate-800">#{n.numero}</td>
-                                                                <td className="px-6 py-4 text-slate-500 font-medium truncate max-w-[200px]">{n.fornecedor || '---'}</td>
-                                                                <td className="px-6 py-4 text-slate-500 font-bold text-xs">{formatData(n.dataLancamento)}</td>
-                                                                <td className="px-6 py-4 text-right font-bold text-slate-800 tracking-tight">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                                <td className="px-6 py-4 text-center">
-                                                                    <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all">
-                                                                        <Paperclip size={18}/>
-                                                                    </button>
-                                                                </td>
-                                                                <td className="px-6 py-4 flex justify-end gap-1">
-                                                                    {n.status === 'pendente' && (
-                                                                        <button onClick={() => alternarStatus(n.id, n.status)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Confirmar">
-                                                                            <CheckCircle2 size={18}/>
+                                                                <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">#{n.numero}</td>
+                                                                <td className="px-4 py-3 text-slate-500 font-medium truncate max-w-[180px] whitespace-nowrap">{n.fornecedor || '---'}</td>
+                                                                <td className="px-4 py-3 text-slate-500 font-bold text-xs tracking-tighter whitespace-nowrap">{formatData(n.dataLancamento)}</td>
+                                                                <td className="px-4 py-3 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                                    {n.arquivoNome ? (
+                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
+                                                                            <Paperclip size={18}/>
                                                                         </button>
+                                                                    ) : (
+                                                                        <span className="text-slate-300" title="Sem anexo">-</span>
                                                                     )}
-                                                                    <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover">
-                                                                        <Trash2 size={18}/>
-                                                                    </button>
+                                                                </td>
+                                                                <td className="px-4 py-3 flex justify-end gap-1.5 whitespace-nowrap">
+                                                                    <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Editar Data e Valor"><Pencil size={18}/></button>
+                                                                    {n.status === 'pendente' && (
+                                                                        <button onClick={() => alternarStatus(n.id, n.status)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Confirmar"><CheckCircle2 size={18}/></button>
+                                                                    )}
+                                                                    <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover"><Trash2 size={18}/></button>
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -422,9 +461,14 @@
                     const dataM = text.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                     const valorM = text.match(/R\$\s*([\d\.]+,\d{2})/i) || text.match(/Valor.*?([\d\.]+,\d{2})/i);
                     const numM = text.match(/(?:NF|N[oó]ta|Nº)\s*[:.-]?\s*(\d{3,})/i);
+                    
+                    let emitente = '';
+                    const emitMatch = text.match(/(?:IDENTIFICA[CÇ][AÃ]O DO EMITENTE|NOME\/RAZ[AÃ]O SOCIAL|RAZ[AÃ]O SOCIAL)[:\s]+([A-ZÀ-Ú0-9\s\.\&\-]{5,60})/i);
+                    if (emitMatch) emitente = emitMatch[1].trim();
+
                     return {
                         numero: numM ? numM[1] : '',
-                        fornecedor: text.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/) ? `CNPJ: ${text.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/)[0]}` : '',
+                        fornecedor: emitente,
                         dataLancamento: dataM ? `${dataM[3]}-${dataM[2]}-${dataM[1]}` : new Date().toISOString().split('T')[0],
                         valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : ''
                     };
@@ -470,9 +514,9 @@
                             <button type="button" onClick={() => setF({...f, tipo: 'amostra'})} className={`flex-1 py-3 text-[10px] font-bold rounded transition-all uppercase tracking-widest ${f.tipo === 'amostra' ? 'bg-white shadow text-slate-700' : 'text-slate-500 hover:text-slate-700'}`}>Amostra Comercial</button>
                         </div>
                         
-                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Número da Nota</label><input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} /></div>
+                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nº Nota</label><input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} /></div>
                         <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Data Lançamento</label><input type="date" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.dataLancamento} onChange={e => setF({...f, dataLancamento: e.target.value})} /></div>
-                        <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Parceiro Comercial / Fornecedor</label><input className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} /></div>
+                        <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Parceiro / Fornecedor</label><input className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} /></div>
                         <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Valor Bruto (R$)</label><input type="number" step="0.01" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.valor} onChange={e => setF({...f, valor: e.target.value})} /></div>
                     </div>
 
@@ -496,34 +540,34 @@
             };
             return (
                 <div className="space-y-8 h-full flex flex-col animate-fade-in">
-                    <div className="bg-white p-20 border border-slate-300 rounded text-center relative group hover:border-blue-400 hover:bg-blue-50/10 transition-all cursor-pointer">
+                    <div className="bg-white p-20 border-2 border-dashed border-slate-300 rounded-lg text-center relative group hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer">
                         <input type="file" multiple accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFiles} />
-                        <div className={`mx-auto w-16 h-16 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-slate-400 mb-6 transition-all group-hover:text-blue-600 ${p ? 'animate-spin' : ''}`}><UploadCloud size={32} /></div>
-                        <p className="font-bold text-lg text-slate-800 tracking-tight uppercase">Carregamento Múltiplo de Notas</p>
-                        <p className="text-slate-400 text-xs font-medium mt-1 uppercase tracking-widest">Processamento simultâneo de até 50 ficheiros</p>
+                        <div className={`mx-auto w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 mb-6 transition-all group-hover:text-blue-600 group-hover:border-blue-200 ${p ? 'animate-spin' : ''}`}><UploadCloud size={40} /></div>
+                        <p className="font-bold text-xl text-slate-800 tracking-tight">Importação Múltipla de Notas</p>
+                        <p className="text-slate-400 text-xs font-medium mt-1">Carregue até 50 arquivos para processamento síncrono</p>
                     </div>
                     {l.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded overflow-hidden card-shadow flex flex-col flex-1 animate-fade-in">
-                            <div className="p-6 bg-slate-900 text-white font-bold flex justify-between items-center text-[10px] uppercase tracking-widest">
-                                <span>Lote de Sincronização: {l.length} Ficheiros</span>
-                                <button onClick={() => setL([])} className="opacity-60 hover:opacity-100 transition-opacity">Limpar Fila</button>
+                        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow flex flex-col flex-1 animate-fade-in">
+                            <div className="p-6 bg-slate-900 text-white font-bold flex justify-between items-center text-xs uppercase tracking-widest">
+                                <span>{l.length} Ficheiros Prontos para Nuvem</span>
+                                <button onClick={() => setL([])} className="opacity-60 hover:opacity-100 transition-opacity">Limpar fila</button>
                             </div>
                             <div className="max-h-96 overflow-y-auto custom-scrollbar">
                                 <table className="w-full text-[11px] text-left">
                                     <tbody className="divide-y divide-slate-100 font-medium">
                                         {l.map(x => (
                                             <tr key={x.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-8 py-4 text-slate-500 uppercase">{x.arquivoNome}</td>
-                                                <td className="px-8 py-4 font-bold text-slate-800">#{x.numero || '---'}</td>
-                                                <td className="px-8 py-4 text-right font-bold text-blue-700 text-xs">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR')}</td>
-                                                <td className="px-8 py-4 text-right"><button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16}/></button></td>
+                                                <td className="px-8 py-4 text-slate-500 uppercase whitespace-nowrap">{x.arquivoNome}</td>
+                                                <td className="px-8 py-4 font-bold text-slate-800 whitespace-nowrap">#{x.numero || 'N/D'}</td>
+                                                <td className="px-8 py-4 text-right font-bold text-blue-700 text-xs whitespace-nowrap">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR')}</td>
+                                                <td className="px-8 py-4 text-right whitespace-nowrap"><button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16}/></button></td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                            <button onClick={() => { onSave(l); setL([]); }} className="w-full bg-blue-700 text-white p-6 font-bold text-xs hover:bg-blue-800 transition-all uppercase tracking-[0.25em]">
-                                Confirmar Upload em Lote
+                            <button onClick={() => { onSave(l); setL([]); }} className="w-full bg-blue-700 text-white p-6 font-bold text-sm hover:bg-blue-800 transition-all uppercase tracking-[0.2em] shadow-inner">
+                                Confirmar Importação em Massa
                             </button>
                         </div>
                     )}
@@ -531,25 +575,24 @@
             );
         }
 
-        // COMPONENTES DE INTERFACE
         function SidebarItem({ active, onClick, icon, label, expanded, badge }) {
             return (
-                <button onClick={onClick} className={`w-full flex items-center justify-between p-4 px-6 transition-all font-bold text-[10px] uppercase tracking-widest ${active ? 'sidebar-active shadow-sm' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-50'}`}>
+                <button onClick={onClick} className={`w-full flex items-center justify-between p-4 px-6 transition-all font-semibold text-xs uppercase tracking-widest ${active ? 'sidebar-active shadow-sm' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-50'}`}>
                     <div className="flex items-center gap-4">{icon} <span className={!expanded ? 'hidden' : ''}>{label}</span></div>
                     {badge > 0 && expanded && <span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded border border-amber-200 font-black tracking-tighter">{badge}</span>}
                 </button>
             );
         }
         
-        function StatCard({ title, val, icon, color, highlight }) {
+        function StatCard({ title, val, icon, bgIcon, highlight }) {
             return (
-                <div className={`bg-white p-6 rounded border border-slate-200 relative card-shadow group transition-all duration-300 ${highlight ? 'border-amber-200 bg-amber-50/5' : 'hover:border-blue-200'}`}>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] mb-2">{title}</p>
-                            <h2 className="text-xl font-bold text-slate-800 tracking-tight">{val}</h2>
+                <div className={`bg-white p-4 lg:p-5 rounded border border-slate-200 relative card-shadow group transition-all duration-300 ${highlight ? 'border-amber-200 bg-amber-50/5' : 'hover:border-blue-200'} flex items-center overflow-hidden`}>
+                    <div className="flex justify-between items-center gap-3 w-full">
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">{title}</p>
+                            <h2 className="text-base sm:text-lg lg:text-xl font-black text-slate-800 tracking-tighter truncate" title={val}>{val}</h2>
                         </div>
-                        <div className={`p-2 rounded bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-700 transition-all border border-slate-100 ${color}`}>{icon}</div>
+                        <div className={`p-2 lg:p-3 rounded-lg transition-all border border-slate-100 shrink-0 ${bgIcon}`}>{icon}</div>
                     </div>
                 </div>
             );
