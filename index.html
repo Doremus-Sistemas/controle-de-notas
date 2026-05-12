@@ -145,8 +145,8 @@
             const salvarEdicao = async (e) => {
                 e.preventDefault();
                 try {
-                    const { id, valor, dataLancamento, numero, fornecedor } = editingNota;
-                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento, numero, fornecedor });
+                    const { id, valor, dataLancamento, numero, fornecedor, status } = editingNota;
+                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento, numero, fornecedor, status });
                     setEditingNota(null);
                 } catch (e) { alert("Erro ao atualizar dados."); }
             };
@@ -164,9 +164,17 @@
                 }
             };
 
-            const alternarStatus = async (id, status) => {
-                const novo = status === 'pendente' ? 'lancada' : 'pendente';
-                await update(ref(db, 'notasFiscais/' + id), { status: novo });
+            const alternarStatus = async (id, statusAtual) => {
+                let novoStatus = 'pendente';
+                if (statusAtual === 'pendente') novoStatus = 'aguardando_amostra';
+                else if (statusAtual === 'aguardando_amostra') novoStatus = 'lancada';
+                else novoStatus = 'pendente';
+                
+                await update(ref(db, 'notasFiscais/' + id), { status: novoStatus });
+            };
+
+            const marcarLancada = async (id) => {
+                await update(ref(db, 'notasFiscais/' + id), { status: 'lancada' });
             };
 
             const abrirVisualizacao = async (nota) => {
@@ -198,11 +206,10 @@
                 return acc;
             }, {});
             
-            // Ordenar as datas da mais recente para a mais antiga
             const datasOrdenadas = Object.keys(notasAgrupadas).sort((a, b) => new Date(b) - new Date(a));
 
             const totalGeral = notas.reduce((acc, n) => acc + parseFloat(n.valor || 0), 0);
-            const pendentes = notas.filter(n => n.status === 'pendente').length;
+            const pendentes = notas.filter(n => n.status !== 'lancada').length;
 
             return (
                 <div className="flex h-screen overflow-hidden">
@@ -221,20 +228,30 @@
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nº Nota</label>
-                                            <input required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
+                                            <input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Data Lançamento</label>
-                                            <input type="date" required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
+                                            <input type="date" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Parceiro / Fornecedor</label>
-                                        <input required className="w-full border p-3 rounded font-medium outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.fornecedor} onChange={e => setEditingNota({...editingNota, fornecedor: e.target.value})} />
+                                        <input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.fornecedor} onChange={e => setEditingNota({...editingNota, fornecedor: e.target.value})} />
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Valor Bruto (R$)</label>
-                                        <input type="number" step="0.01" required className="w-full border p-3 rounded font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Valor Bruto (R$)</label>
+                                            <input type="number" step="0.01" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Status</label>
+                                            <select className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.status} onChange={e => setEditingNota({...editingNota, status: e.target.value})}>
+                                                <option value="pendente">Pendente</option>
+                                                <option value="aguardando_amostra">Aguard. Amostra</option>
+                                                <option value="lancada">Lançada</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-4 bg-slate-50 border-t flex gap-3">
@@ -285,7 +302,7 @@
                             <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20} className="text-blue-500"/>} label="Dashboard" expanded={isSidebarOpen} />
                             <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<Plus size={20} className="text-emerald-500"/>} label="Novo Registro" expanded={isSidebarOpen} />
                             <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={20} className="text-indigo-500"/>} label="Importação Lote" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20} className="text-amber-500"/>} label="Base de Dados" expanded={isSidebarOpen} badge={notas.filter(n=>n.status==='pendente').length} />
+                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20} className="text-amber-500"/>} label="Base de Dados" expanded={isSidebarOpen} badge={pendentes} />
                         </nav>
 
                         {/* MASCOTE PROFISSIONAL MAIOR */}
@@ -327,7 +344,7 @@
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                             <StatCard title="Valor Total" val={`R$ ${totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<TrendingUp size={22} className="text-blue-600"/>} bgIcon="bg-blue-50" />
                                             <StatCard title="Notas Registradas" val={notas.length} icon={<FileText size={22} className="text-indigo-600"/>} bgIcon="bg-indigo-50" />
-                                            <StatCard title="Pendentes" val={pendentes} icon={<Clock size={22} className="text-amber-600"/>} bgIcon="bg-amber-50" highlight={pendentes > 0} />
+                                            <StatCard title="Ações Pendentes" val={pendentes} icon={<Clock size={22} className="text-amber-600"/>} bgIcon="bg-amber-50" highlight={pendentes > 0} />
                                             <StatCard title="Última Entrada" val={notas[0] ? formatData(notas[0].dataLancamento) : '--/--'} icon={<Calendar size={22} className="text-slate-600"/>} bgIcon="bg-slate-50" />
                                         </div>
 
@@ -393,6 +410,12 @@
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
                                                 <input className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" placeholder="Procurar registro..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                             </div>
+                                            <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-md outline-none text-xs font-bold text-slate-600 uppercase tracking-widest hover:bg-slate-50 cursor-pointer w-full lg:w-auto">
+                                                <option value="todos">Todos Status</option>
+                                                <option value="pendente">Pendentes</option>
+                                                <option value="aguardando_amostra">Aguard. Amostras</option>
+                                                <option value="lancada">Lançadas</option>
+                                            </select>
                                             <select value={filtroMes} onChange={e => setFiltroMes(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-md outline-none text-xs font-bold text-slate-600 uppercase tracking-widest hover:bg-slate-50 cursor-pointer w-full lg:w-auto">
                                                 <option value="todos">Mês Competência</option>
                                                 {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => <option key={m} value={m}>{m}</option>)}
@@ -419,7 +442,7 @@
                                                     ) : (
                                                         datasOrdenadas.map(data => (
                                                             <React.Fragment key={data}>
-                                                                <tbody className="bg-slate-100/50 border-b border-slate-200">
+                                                                <tbody className="bg-slate-100/50 border-y border-slate-200">
                                                                     <tr>
                                                                         <td colSpan="6" className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">
                                                                             <CalendarDays size={14} className="inline-block mr-2 text-blue-600 -mt-0.5"/>
@@ -428,34 +451,50 @@
                                                                     </tr>
                                                                 </tbody>
                                                                 <tbody className="divide-y divide-slate-100 font-medium bg-white">
-                                                                    {notasAgrupadas[data].map(n => (
-                                                                        <tr key={n.id} className={`hover:bg-slate-50 transition-colors ${n.status === 'pendente' ? 'bg-amber-50/5' : ''}`}>
-                                                                            <td className="px-4 py-3 whitespace-nowrap">
-                                                                                <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${n.status === 'pendente' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'}`}>
-                                                                                    {n.status}
-                                                                                </button>
-                                                                            </td>
-                                                                            <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">#{n.numero}</td>
-                                                                            <td className="px-4 py-3 text-slate-500 font-medium truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
-                                                                            <td className="px-4 py-3 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                                            <td className="px-4 py-3 text-center whitespace-nowrap">
-                                                                                {n.arquivoNome ? (
-                                                                                    <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
-                                                                                        <Paperclip size={18}/>
+                                                                    {notasAgrupadas[data].map(n => {
+                                                                        let statusClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
+                                                                        let rowBgClass = '';
+                                                                        let statusLabel = 'Lançada';
+
+                                                                        if (n.status === 'pendente') {
+                                                                            statusClass = 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
+                                                                            rowBgClass = 'bg-amber-50/10';
+                                                                            statusLabel = 'Pendente';
+                                                                        } else if (n.status === 'aguardando_amostra') {
+                                                                            statusClass = 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
+                                                                            rowBgClass = 'bg-purple-50/10';
+                                                                            statusLabel = 'Aguard. Amostra';
+                                                                        }
+
+                                                                        return (
+                                                                            <tr key={n.id} className={`hover:bg-slate-50 transition-colors ${rowBgClass}`}>
+                                                                                <td className="px-4 py-3 whitespace-nowrap">
+                                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${statusClass}`}>
+                                                                                        {statusLabel}
                                                                                     </button>
-                                                                                ) : (
-                                                                                    <span className="text-slate-300" title="Sem anexo">-</span>
-                                                                                )}
-                                                                            </td>
-                                                                            <td className="px-4 py-3 flex justify-end gap-1.5 whitespace-nowrap">
-                                                                                <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Editar Registro"><Pencil size={18}/></button>
-                                                                                {n.status === 'pendente' && (
-                                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Confirmar"><CheckCircle2 size={18}/></button>
-                                                                                )}
-                                                                                <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover"><Trash2 size={18}/></button>
-                                                                            </td>
-                                                                        </tr>
-                                                                    ))}
+                                                                                </td>
+                                                                                <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">#{n.numero}</td>
+                                                                                <td className="px-4 py-3 text-slate-500 font-medium truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
+                                                                                <td className="px-4 py-3 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                                                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                                                    {n.arquivoNome ? (
+                                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
+                                                                                            <Paperclip size={18}/>
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        <span className="text-slate-300" title="Sem anexo">-</span>
+                                                                                    )}
+                                                                                </td>
+                                                                                <td className="px-4 py-3 flex justify-end gap-1.5 whitespace-nowrap">
+                                                                                    <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Editar Registro"><Pencil size={18}/></button>
+                                                                                    {n.status !== 'lancada' && (
+                                                                                        <button onClick={() => marcarLancada(n.id)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Marcar como Lançada"><CheckCircle2 size={18}/></button>
+                                                                                    )}
+                                                                                    <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover"><Trash2 size={18}/></button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
                                                                 </tbody>
                                                             </React.Fragment>
                                                         ))
@@ -497,23 +536,33 @@
                     const emitMatch = text.match(/(?:IDENTIFICA[CÇ][AÃ]O DO EMITENTE|NOME\/RAZ[AÃ]O SOCIAL|RAZ[AÃ]O SOCIAL)[:\s]+([A-ZÀ-Ú0-9\s\.\&\-]{5,60})/i);
                     if (emitMatch) emitente = emitMatch[1].trim();
 
+                    let isAmostra = false;
+                    if (text.toLowerCase().includes('amostra') || text.toLowerCase().includes('brinde')) {
+                        isAmostra = true;
+                    }
+
                     return {
                         numero: numM ? numM[1] : '',
                         fornecedor: emitente,
                         dataLancamento: dataM ? `${dataM[3]}-${dataM[2]}-${dataM[1]}` : new Date().toISOString().split('T')[0],
-                        valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : ''
+                        valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : '',
+                        isAmostra: isAmostra
                     };
-                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '' }; }
+                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', isAmostra: false }; }
             } else {
                 const text = await file.text();
                 const xml = new DOMParser().parseFromString(text, "text/xml");
                 const get = t => xml.getElementsByTagName(t)[0]?.textContent || '';
                 
+                const natOp = get('natOp').toLowerCase();
+                const isAmostra = natOp.includes('amostra') || natOp.includes('brinde');
+
                 return {
                     numero: get('nNF') || get('Numero') || get('NfseNumero') || '',
                     fornecedor: xml.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || get('RazaoSocial') || '',
                     dataLancamento: (get('dhEmi') || get('dEmi') || get('DataEmissao'))?.split('T')[0] || new Date().toISOString().split('T')[0],
-                    valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || ''
+                    valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || '',
+                    isAmostra: isAmostra
                 };
             }
         };
@@ -525,7 +574,8 @@
 
             const handleFile = async (e) => {
                 const file = e.target.files[0]; if(!file) return; setLendo(true);
-                const d = await extrairDados(file); setF(p => ({...p, ...d}));
+                const d = await extrairDados(file); 
+                setF(p => ({...p, ...d, status: d.isAmostra ? 'aguardando_amostra' : 'pendente'}));
                 const reader = new FileReader(); reader.onload = (ev) => { setArq({ name: file.name, data: ev.target.result }); setLendo(false); };
                 reader.readAsDataURL(file);
             };
@@ -545,6 +595,15 @@
                         <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Data Lançamento</label><input type="date" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.dataLancamento} onChange={e => setF({...f, dataLancamento: e.target.value})} /></div>
                         <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Parceiro / Fornecedor</label><input className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} /></div>
                         <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Valor Bruto (R$)</label><input type="number" step="0.01" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.valor} onChange={e => setF({...f, valor: e.target.value})} /></div>
+                        
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Status de Origem</label>
+                            <select className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.status} onChange={e => setF({...f, status: e.target.value})}>
+                                <option value="pendente">Pendente</option>
+                                <option value="aguardando_amostra">Aguard. Amostra</option>
+                                <option value="lancada">Lançada</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button className="w-full bg-blue-700 text-white p-5 rounded font-bold text-xs hover:bg-blue-800 transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 uppercase tracking-[0.2em]">
@@ -561,7 +620,8 @@
                 const novas = await Promise.all(files.map(async file => {
                     const d = await extrairDados(file);
                     const b64 = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file); });
-                    return { ...d, id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, status: 'pendente', dataUpload: new Date().toISOString() };
+                    const definedStatus = d.isAmostra ? 'aguardando_amostra' : 'pendente';
+                    return { ...d, id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, status: definedStatus, dataUpload: new Date().toISOString() };
                 }));
                 setL(prev => [...prev, ...novas]); setP(false);
             };
@@ -571,7 +631,7 @@
                         <input type="file" multiple accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFiles} />
                         <div className={`mx-auto w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 mb-6 transition-all group-hover:text-blue-600 group-hover:border-blue-200 ${p ? 'animate-spin' : ''}`}><UploadCloud size={40} /></div>
                         <p className="font-bold text-xl text-slate-800 tracking-tight">Importação Múltipla de Notas</p>
-                        <p className="text-slate-400 text-xs font-medium mt-1">Carregue até 50 arquivos para processamento síncrono</p>
+                        <p className="text-slate-400 text-xs font-medium mt-1">O sistema identifica se é venda ou amostra automaticamente</p>
                     </div>
                     {l.length > 0 && (
                         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow flex flex-col flex-1 animate-fade-in">
@@ -586,6 +646,11 @@
                                             <tr key={x.id} className="hover:bg-slate-50 transition-colors">
                                                 <td className="px-8 py-4 text-slate-500 uppercase whitespace-nowrap">{x.arquivoNome}</td>
                                                 <td className="px-8 py-4 font-bold text-slate-800 whitespace-nowrap">#{x.numero || 'N/D'}</td>
+                                                <td className="px-8 py-4">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${x.status === 'aguardando_amostra' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                        {x.status === 'aguardando_amostra' ? 'Amostra' : 'Venda'}
+                                                    </span>
+                                                </td>
                                                 <td className="px-8 py-4 text-right font-bold text-blue-700 text-xs whitespace-nowrap">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR')}</td>
                                                 <td className="px-8 py-4 text-right whitespace-nowrap"><button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16}/></button></td>
                                             </tr>
@@ -623,10 +688,6 @@
                     </div>
                 </div>
             );
-        }
-        
-        function FilterBtn({ active, onClick, label }) {
-            return <button onClick={onClick} className={`px-5 py-2 text-[9px] font-bold rounded transition-all uppercase tracking-widest ${active ? 'bg-white shadow-sm text-blue-800 border border-slate-200' : 'text-slate-400 hover:text-slate-800'}`}>{label}</button>;
         }
         
         function formatData(s) { if(!s) return '-'; const p = s.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s; }
