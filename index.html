@@ -26,6 +26,7 @@
         "imports": {
             "react": "https://esm.sh/react@18.2.0",
             "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+            "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
             "lucide-react": "https://esm.sh/lucide-react@0.292.0",
             "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
             "firebase/database": "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js"
@@ -43,28 +44,61 @@
             background-color: #f8fafc; 
             overflow: hidden; 
             font-family: 'Inter', sans-serif;
+            color: #0f172a;
         }
         #root { height: 100%; }
 
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .sidebar-active {
-            background-color: #f1f5f9;
-            color: #1e40af;
-            border-left: 4px solid #1e40af;
+            background-color: #eff6ff;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        .sidebar-active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background-color: #2563eb;
+            border-top-right-radius: 4px;
+            border-bottom-right-radius: 4px;
         }
         
-        .card-shadow {
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        .input-premium {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            padding: 0.625rem 0.875rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: #1e293b;
+            background-color: #fff;
+            outline: none;
+            transition: all 0.15s ease;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .input-premium:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+        
+        .label-premium {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.375rem;
         }
     </style>
 </head>
@@ -78,13 +112,13 @@
             Plus, List, LayoutDashboard, Upload, Trash2, Search, Paperclip,
             TrendingUp, Calendar, AlertCircle, Clock, Package, CheckCircle2,
             Filter, CalendarDays, Menu, X, FilePlus, UploadCloud, Check, Save,
-            ArrowRight, RefreshCw, FileText, Briefcase, Pencil, XCircle
+            ArrowRight, RefreshCw, FileText, Briefcase, Pencil, XCircle, User,
+            ChevronRight, Cloud, Settings
         } from 'lucide-react';
         
         import { initializeApp } from 'firebase/app';
         import { getDatabase, ref, onValue, set, remove, update, get } from 'firebase/database';
 
-        // CONFIGURAÇÃO FIREBASE OFICIAL
         const firebaseConfig = {
             apiKey: "AIzaSyBLtWbeKw9gWD1kPd8DL_r5gG2FQ1PJBC8",
             authDomain: "sistemanotas-523ac.firebaseapp.com",
@@ -112,13 +146,14 @@
             
             const [filtroStatus, setFiltroStatus] = useState('todos');
             const [filtroMes, setFiltroMes] = useState('todos');
+            const [filtroClassificacao, setFiltroClassificacao] = useState('todas');
 
             useEffect(() => {
                 const notasRef = ref(db, 'notasFiscais');
                 const unsubscribe = onValue(notasRef, (snapshot) => {
                     const data = snapshot.val();
-                    const notasArray = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
-                    notasArray.sort((a, b) => new Date(b.dataUpload) - new Date(a.dataUpload));
+                    const notasArray = data ? Object.keys(data).map(key => ({ id: key, classificacao: 'padrao', ...data[key] })) : [];
+                    notasArray.sort((a, b) => new Date(b.dataUpload || 0) - new Date(a.dataUpload || 0));
                     setNotas(notasArray);
                     setCarregando(false);
                     setErroConexao(false);
@@ -139,7 +174,7 @@
                     await set(ref(db, 'notasFiscais/' + id), dadosLista);
                     if (base64) await set(ref(db, 'arquivos/' + id), base64);
                     setActiveTab('historico');
-                } catch (e) { alert("Erro de sincronização."); }
+                } catch (e) { alert("Erro de sincronização com a base de dados."); }
             };
 
             const salvarEdicao = async (e) => {
@@ -158,7 +193,7 @@
             };
 
             const deletarNota = async (id) => {
-                if(window.confirm('Excluir registro permanentemente?')) {
+                if(window.confirm('Tem a certeza que pretende excluir este registo permanentemente?')) {
                     await remove(ref(db, 'notasFiscais/' + id));
                     await remove(ref(db, 'arquivos/' + id));
                 }
@@ -177,6 +212,11 @@
                 await update(ref(db, 'notasFiscais/' + id), { status: 'lancada' });
             };
 
+            // Função para atualizar diretamente o dropdown na tabela
+            const atualizarClassificacao = async (id, novaClassificacao) => {
+                await update(ref(db, 'notasFiscais/' + id), { classificacao: novaClassificacao });
+            };
+
             const abrirVisualizacao = async (nota) => {
                 setPreviewNota({ ...nota, carregandoAnexo: true });
                 try {
@@ -191,14 +231,14 @@
             };
 
             const notasFiltradas = notas.filter(n => {
-                const matchBusca = n.numero.includes(searchTerm) || (n.fornecedor && n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
+                const matchBusca = n.numero?.includes(searchTerm) || (n.fornecedor && n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
                 const matchStatus = filtroStatus === 'todos' || n.status === filtroStatus;
+                const matchClass = filtroClassificacao === 'todas' || (n.classificacao || 'padrao') === filtroClassificacao;
                 const mesNota = n.dataLancamento ? n.dataLancamento.split('-')[1] : null;
                 const matchMes = filtroMes === 'todos' || mesNota === filtroMes;
-                return matchBusca && matchStatus && matchMes;
+                return matchBusca && matchStatus && matchMes && matchClass;
             });
 
-            // Agrupar as notas filtradas por data de lançamento
             const notasAgrupadas = notasFiltradas.reduce((acc, nota) => {
                 const data = nota.dataLancamento || 'Sem Data';
                 if (!acc[data]) acc[data] = [];
@@ -212,41 +252,41 @@
             const pendentes = notas.filter(n => n.status !== 'lancada').length;
 
             return (
-                <div className="flex h-screen overflow-hidden">
+                <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-800">
                     
-                    {/* MODAL DE EDIÇÃO RÁPIDA */}
+                    {/* MODAL DE EDIÇÃO */}
                     {editingNota && (
-                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
-                            <form onSubmit={salvarEdicao} className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200">
-                                <div className="p-6 border-b bg-slate-50 flex justify-between items-center">
-                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                        <Pencil size={18} className="text-blue-600"/> Editar Registro
+                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+                            <form onSubmit={salvarEdicao} className="bg-white rounded-xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200">
+                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                                        <Pencil size={18} className="text-blue-600"/> Editar Registo
                                     </h3>
-                                    <button type="button" onClick={() => setEditingNota(null)} className="p-1 hover:bg-slate-200 rounded text-slate-500"><X size={20}/></button>
+                                    <button type="button" onClick={() => setEditingNota(null)} className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 transition-colors"><X size={18}/></button>
                                 </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <div className="p-6 space-y-5">
+                                    <div className="grid grid-cols-2 gap-5">
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Nº Nota</label>
-                                            <input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
+                                            <label className="label-premium">Nº Nota</label>
+                                            <input required className="input-premium" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Data Lançamento</label>
-                                            <input type="date" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
+                                            <label className="label-premium">Data Lançamento</label>
+                                            <input type="date" required className="input-premium" value={editingNota.dataLancamento} onChange={e => setEditingNota({...editingNota, dataLancamento: e.target.value})} />
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Parceiro / Fornecedor</label>
-                                        <input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.fornecedor} onChange={e => setEditingNota({...editingNota, fornecedor: e.target.value})} />
+                                        <label className="label-premium">Parceiro / Fornecedor</label>
+                                        <input required className="input-premium" value={editingNota.fornecedor} onChange={e => setEditingNota({...editingNota, fornecedor: e.target.value})} />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 gap-5">
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Valor Bruto (R$)</label>
-                                            <input type="number" step="0.01" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
+                                            <label className="label-premium">Valor Bruto (R$)</label>
+                                            <input type="number" step="0.01" required className="input-premium" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Status</label>
-                                            <select className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={editingNota.status} onChange={e => setEditingNota({...editingNota, status: e.target.value})}>
+                                            <label className="label-premium">Status</label>
+                                            <select className="input-premium cursor-pointer" value={editingNota.status} onChange={e => setEditingNota({...editingNota, status: e.target.value})}>
                                                 <option value="pendente">Pendente</option>
                                                 <option value="aguardando_amostra">Aguard. Amostra</option>
                                                 <option value="lancada">Lançada</option>
@@ -254,9 +294,11 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-slate-50 border-t flex gap-3">
-                                    <button type="button" onClick={() => setEditingNota(null)} className="flex-1 py-3 text-xs font-bold text-slate-500 hover:bg-slate-200 rounded transition-all">Cancelar</button>
-                                    <button type="submit" className="flex-1 py-3 text-xs font-bold bg-blue-600 text-white rounded hover:bg-blue-700 shadow-md shadow-blue-100 transition-all uppercase">Gravar Alterações</button>
+                                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end">
+                                    <button type="button" onClick={() => setEditingNota(null)} className="px-5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                                    <button type="submit" className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-2">
+                                        Gravar Alterações
+                                    </button>
                                 </div>
                             </form>
                         </div>
@@ -264,233 +306,339 @@
 
                     {/* MODAL DE VISUALIZAÇÃO PDF */}
                     {previewNota && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-10 animate-fade-in">
-                            <div className="bg-white rounded-lg w-full max-w-6xl h-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
-                                <div className="flex justify-between items-center px-6 py-4 border-b bg-slate-50">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 sm:p-8 animate-fade-in">
+                            <div className="bg-white rounded-xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+                                <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-blue-600 text-white rounded"><FileText size={18}/></div>
+                                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><FileText size={20}/></div>
                                         <div>
                                             <h3 className="text-sm font-semibold text-slate-800">{previewNota.arquivoNome}</h3>
-                                            <p className="text-[11px] text-slate-500 font-medium tracking-tight">DATA: {formatData(previewNota.dataLancamento)} • #{previewNota.numero}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">Data: {formatData(previewNota.dataLancamento)} • Doc Nº {previewNota.numero}</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => setPreviewNota(null)} className="p-2 hover:bg-red-50 text-slate-500 hover:text-red-500 rounded-md transition-all"><X size={20}/></button>
+                                    <button onClick={() => setPreviewNota(null)} className="p-2 hover:bg-slate-100 text-slate-500 hover:text-slate-700 rounded-lg transition-all"><X size={20}/></button>
                                 </div>
-                                <div className="flex-1 bg-slate-100 p-4 overflow-hidden flex items-center justify-center">
+                                <div className="flex-1 bg-slate-100/50 p-4 sm:p-6 overflow-hidden flex items-center justify-center">
                                     {previewNota.carregandoAnexo ? (
                                         <div className="flex flex-col items-center gap-3">
-                                            <RefreshCw className="animate-spin text-blue-600" size={32}/>
-                                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-widest">A aceder à Cloud...</span>
+                                            <RefreshCw className="animate-spin text-blue-600" size={28}/>
+                                            <span className="text-sm font-medium text-slate-500">A obter documento da Cloud...</span>
                                         </div>
-                                    ) : <iframe src={previewNota.arquivoDataUrl} className="w-full h-full rounded border border-slate-300 bg-white"></iframe>}
+                                    ) : <iframe src={previewNota.arquivoDataUrl} className="w-full h-full rounded-lg border border-slate-200 bg-white shadow-sm"></iframe>}
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* SIDEBAR */}
-                    <aside className={`bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full md:translate-x-0 md:w-20'} z-50 overflow-hidden`}>
-                        <div className="p-6 flex items-center gap-3 border-b border-slate-100 h-20">
-                            <div className="w-8 h-8 bg-blue-700 rounded flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
-                                <Briefcase size={18} />
+                    {/* SIDEBAR PROFISSIONAL */}
+                    <aside className={`bg-white border-r border-slate-200 flex flex-col transition-all duration-300 shadow-[2px_0_8px_rgba(0,0,0,0.02)] ${isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full md:translate-x-0 md:w-20'} z-50 overflow-hidden shrink-0`}>
+                        <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-100 shrink-0">
+                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-blue-200">
+                                <Briefcase size={18} strokeWidth={2.5}/>
                             </div>
-                            <span className={`font-bold text-slate-800 tracking-tight whitespace-nowrap ${!isSidebarOpen && 'hidden'}`}>Admin Notas</span>
+                            <span className={`font-bold text-slate-800 text-sm whitespace-nowrap transition-opacity duration-200 ${!isSidebarOpen && 'opacity-0 hidden'}`}>Doremus Notas</span>
                         </div>
                         
-                        <nav className="flex-1 py-6">
-                            <div className={`px-6 mb-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest ${!isSidebarOpen && 'hidden'}`}>Plataforma</div>
-                            <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20} className="text-blue-500"/>} label="Dashboard" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<Plus size={20} className="text-emerald-500"/>} label="Novo Registro" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={20} className="text-indigo-500"/>} label="Importação Lote" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20} className="text-amber-500"/>} label="Base de Dados" expanded={isSidebarOpen} badge={pendentes} />
+                        <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden space-y-1">
+                            <div className={`px-6 mt-2 mb-2 text-xs font-semibold text-slate-400 ${!isSidebarOpen && 'hidden'}`}>Visão Geral</div>
+                            <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={18}/>} label="Dashboard" expanded={isSidebarOpen} />
+                            
+                            <div className={`px-6 mt-6 mb-2 text-xs font-semibold text-slate-400 ${!isSidebarOpen && 'hidden'}`}>Gestão</div>
+                            <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<FilePlus size={18}/>} label="Novo Registo" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={18}/>} label="Importação em Lote" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={18}/>} label="Base de Dados" expanded={isSidebarOpen} badge={pendentes} />
                         </nav>
 
-                        {/* MASCOTE PROFISSIONAL MAIOR */}
-                        <div className="p-4 mt-auto border-t border-slate-100 bg-slate-50/50">
-                            <div className={`flex flex-col items-center text-center ${!isSidebarOpen && 'opacity-0'}`}>
-                                <img src="https://i.postimg.cc/j29ntZXm/4768DAA3-8F2D-4780-8252-D97E005EF5C4-removebg-preview.png" className="w-40 hover:scale-105 transition-transform duration-300 drop-shadow-sm -mt-8" alt="Assistente" />
-                                <div className="mt-2 bg-white w-full border border-slate-200 p-3 rounded-lg shadow-sm">
-                                    <p className="text-[10px] font-bold text-slate-700 leading-tight uppercase tracking-tight">Suporte Técnico</p>
-                                    <p className="text-[11px] text-slate-500 mt-1 font-medium italic">Sincronização em tempo real ativa.</p>
+                        {/* STATUS DO USUÁRIO/SISTEMA */}
+                        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                            <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center'}`}>
+                                <div className="w-9 h-9 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+                                    <User size={18} />
+                                </div>
+                                <div className={`flex flex-col overflow-hidden ${!isSidebarOpen && 'hidden'}`}>
+                                    <span className="text-sm font-semibold text-slate-800 truncate">Administrador</span>
+                                    <span className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     </aside>
 
                     {/* CONTEÚDO PRINCIPAL */}
-                    <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-                        <header className="bg-white border-b border-slate-200 h-20 px-8 flex items-center justify-between shrink-0 shadow-sm z-40">
-                            <div className="flex items-center gap-6">
-                                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-slate-50 rounded-md transition-all border border-transparent hover:border-slate-200">
+                    <div className="flex-1 flex flex-col h-full relative overflow-hidden min-w-0">
+                        <header className="bg-white border-b border-slate-200 h-16 px-6 flex items-center justify-between shrink-0 z-40">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent">
                                     <Menu size={20}/>
                                 </button>
-                                <div className="h-10 w-px bg-slate-200 hidden md:block"></div>
-                                <a href='https://postimg.cc/qgvMZTFh' target='_blank' className="hidden sm:block">
-                                    <img src='https://i.postimg.cc/MZyMHZbD/as-02-(1).png' className="h-8" border='0' alt='Logo' />
-                                </a>
+                                <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
+                                <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-500">
+                                    <span>Gestão de Notas</span>
+                                    <ChevronRight size={14} className="text-slate-300"/>
+                                    <span className="text-slate-800 capitalize">{activeTab === 'historico' ? 'Base de Dados' : activeTab.replace('-', ' ')}</span>
+                                </div>
                             </div>
                             
-                            <div className="flex items-center gap-4 text-[11px] font-bold text-slate-500 bg-slate-50 px-4 py-2 rounded-full border border-slate-100 uppercase tracking-widest">
-                                {carregando ? <RefreshCw size={14} className="animate-spin text-blue-500"/> : <CheckCircle2 size={14} className="text-emerald-500"/>}
-                                {carregando ? 'Sincronizando' : 'Cloud Conectada'}
+                            <div className="flex items-center gap-2">
+                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${carregando ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+                                    {carregando ? <RefreshCw size={14} className="animate-spin"/> : <Cloud size={14}/>}
+                                    <span className="hidden sm:inline">{carregando ? 'Sincronizando...' : 'Cloud Conectada'}</span>
+                                </div>
                             </div>
                         </header>
 
-                        <main className="flex-1 overflow-y-auto custom-scrollbar">
-                            <div className="max-w-7xl mx-auto p-8 lg:p-12">
+                        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+                            <div className="max-w-7xl mx-auto space-y-8">
                                 
+                                {/* ----------------------- TAB: DASHBOARD ----------------------- */}
                                 {activeTab === 'dashboard' && (
-                                    <div className="space-y-10 animate-fade-in">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                            <StatCard title="Valor Total" val={`R$ ${totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`} icon={<TrendingUp size={22} className="text-blue-600"/>} bgIcon="bg-blue-50" />
-                                            <StatCard title="Notas Registradas" val={notas.length} icon={<FileText size={22} className="text-indigo-600"/>} bgIcon="bg-indigo-50" />
-                                            <StatCard title="Ações Pendentes" val={pendentes} icon={<Clock size={22} className="text-amber-600"/>} bgIcon="bg-amber-50" highlight={pendentes > 0} />
-                                            <StatCard title="Última Entrada" val={notas[0] ? formatData(notas[0].dataLancamento) : '--/--'} icon={<Calendar size={22} className="text-slate-600"/>} bgIcon="bg-slate-50" />
+                                    <div className="space-y-6 animate-fade-in">
+                                        
+                                        {/* Cabeçalho do Dashboard */}
+                                        <div className="bg-gradient-to-br from-blue-700 to-indigo-800 rounded-2xl p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-6">
+                                            <div>
+                                                <h2 className="text-3xl font-bold mb-2 tracking-tight">Painel de Controle</h2>
+                                                <p className="text-blue-100/80 text-sm font-medium">Acompanhamento e gestão de processamento em tempo real.</p>
+                                            </div>
+                                            <div className="bg-white/10 p-5 rounded-xl backdrop-blur-md border border-white/10 text-center min-w-[220px]">
+                                                <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-1">Total Processado</p>
+                                                <p className="text-3xl font-bold tracking-tight">R$ {totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                                            </div>
                                         </div>
 
-                                        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                            <div className="px-6 lg:px-8 py-5 border-b border-slate-100 bg-slate-50/30 flex justify-between items-center">
-                                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-[0.1em]">Registros Recentes</h3>
-                                                <button onClick={() => setActiveTab('historico')} className="text-blue-700 text-xs font-bold hover:underline uppercase">Tabela Geral</button>
+                                        {/* Cartões KPI */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-emerald-200 transition-colors">
+                                                <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100"><CheckCircle2 size={26}/></div>
+                                                <div>
+                                                    <p className="text-sm text-slate-500 font-semibold mb-0.5">Notas Lançadas</p>
+                                                    <p className="text-2xl font-bold text-slate-800">{notas.filter(n => n.status === 'lancada').length}</p>
+                                                </div>
                                             </div>
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full text-left text-sm">
-                                                    <thead className="text-slate-400 font-semibold border-b border-slate-100 uppercase text-[10px] tracking-widest bg-slate-50/10">
-                                                        <tr>
-                                                            <th className="px-6 py-4 whitespace-nowrap">Fatura</th>
-                                                            <th className="px-6 py-4 whitespace-nowrap">Lançamento</th>
-                                                            <th className="px-6 py-4 whitespace-nowrap">Parceiro</th>
-                                                            <th className="px-6 py-4 text-center whitespace-nowrap">Arquivo</th>
-                                                            <th className="px-6 py-4 text-right whitespace-nowrap">Valor</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100">
-                                                        {notas.slice(0, 8).map(n => (
-                                                            <tr key={n.id} className="hover:bg-slate-50/80 transition-colors">
-                                                                <td className="px-6 py-4 font-bold text-slate-700 whitespace-nowrap">#{n.numero}</td>
-                                                                <td className="px-6 py-4 text-slate-500 font-semibold text-xs tracking-tighter whitespace-nowrap">{formatData(n.dataLancamento)}</td>
-                                                                <td className="px-6 py-4 text-slate-500 font-medium truncate max-w-[200px]">{n.fornecedor || '---'}</td>
-                                                                <td className="px-6 py-4 text-center whitespace-nowrap">
-                                                                    {n.arquivoNome ? (
-                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
-                                                                            <Paperclip size={16}/>
-                                                                        </button>
-                                                                    ) : (
-                                                                        <span className="text-slate-300" title="Sem anexo">-</span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                            </tr>
+                                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-amber-200 transition-colors">
+                                                <div className="w-14 h-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100"><Clock size={26}/></div>
+                                                <div>
+                                                    <p className="text-sm text-slate-500 font-semibold mb-0.5">Ações Pendentes</p>
+                                                    <p className="text-2xl font-bold text-slate-800">{pendentes}</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-blue-200 transition-colors">
+                                                <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100"><FileText size={26}/></div>
+                                                <div>
+                                                    <p className="text-sm text-slate-500 font-semibold mb-0.5">Total de Registos</p>
+                                                    <p className="text-2xl font-bold text-slate-800">{notas.length}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Layout em 2 Colunas */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            {/* Atividade Recente */}
+                                            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                                                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                                    <h3 className="font-bold text-slate-800">Atividade Recente</h3>
+                                                    <button onClick={() => setActiveTab('historico')} className="text-sm text-blue-600 font-semibold hover:text-blue-700 flex items-center gap-1">Ver Tabela <ArrowRight size={14}/></button>
+                                                </div>
+                                                <div className="flex-1 p-0">
+                                                    <div className="divide-y divide-slate-100">
+                                                        {notas.slice(0, 5).map(n => (
+                                                            <div key={n.id} className="p-4 px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center">
+                                                                        <FileText size={18}/>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="font-semibold text-slate-800">Fatura #{n.numero || 'N/D'}</p>
+                                                                        <p className="text-xs font-medium text-slate-500">{n.fornecedor || 'Fornecedor não identificado'} • {formatData(n.dataLancamento)}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className="font-bold text-slate-800">R$ {parseFloat(n.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${n.status === 'lancada' ? 'bg-emerald-100 text-emerald-700' : n.status === 'aguardando_amostra' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                                        {n.status.replace('_', ' ')}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
                                                         ))}
-                                                    </tbody>
-                                                </table>
+                                                        {notas.length === 0 && <div className="p-10 text-center text-slate-500 font-medium">Nenhum documento processado ainda.</div>}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Status Progress */}
+                                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                                                <h3 className="font-bold text-slate-800 mb-6">Distribuição de Status</h3>
+                                                <div className="space-y-6 flex-1 justify-center flex flex-col">
+                                                    <div>
+                                                        <div className="flex justify-between text-sm mb-2">
+                                                            <span className="font-semibold text-slate-600 flex items-center gap-2"><Clock size={16} className="text-amber-500"/> Pendentes</span>
+                                                            <span className="font-bold text-slate-800">{notas.filter(n => n.status === 'pendente').length}</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div className="bg-amber-500 h-full rounded-full transition-all duration-1000" style={{ width: `${notas.length ? (notas.filter(n => n.status === 'pendente').length / notas.length) * 100 : 0}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex justify-between text-sm mb-2">
+                                                            <span className="font-semibold text-slate-600 flex items-center gap-2"><Package size={16} className="text-purple-500"/> Aguardando Amostra</span>
+                                                            <span className="font-bold text-slate-800">{notas.filter(n => n.status === 'aguardando_amostra').length}</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div className="bg-purple-500 h-full rounded-full transition-all duration-1000" style={{ width: `${notas.length ? (notas.filter(n => n.status === 'aguardando_amostra').length / notas.length) * 100 : 0}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex justify-between text-sm mb-2">
+                                                            <span className="font-semibold text-slate-600 flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/> Lançadas</span>
+                                                            <span className="font-bold text-slate-800">{notas.filter(n => n.status === 'lancada').length}</span>
+                                                        </div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{ width: `${notas.length ? (notas.filter(n => n.status === 'lancada').length / notas.length) * 100 : 0}%` }}></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
+                                {/* ----------------------- TAB: LANCAR INDIVIDUAL ----------------------- */}
                                 {activeTab === 'lancar' && (
-                                    <div className="max-w-4xl mx-auto animate-fade-in">
-                                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight uppercase mb-8">Entrada de Nota Individual</h2>
+                                    <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-slate-800">Novo Registo</h2>
+                                            <p className="text-sm text-slate-500 mt-1">Insira os dados da nota ou envie o ficheiro (a data assume o dia de hoje automaticamente e remove letras/zeros do número).</p>
+                                        </div>
                                         <FormIndividual onSave={salvarNota} />
                                     </div>
                                 )}
 
+                                {/* ----------------------- TAB: IMPORTAÇÃO LOTE ----------------------- */}
                                 {activeTab === 'lote' && (
-                                    <div className="max-w-5xl mx-auto animate-fade-in">
-                                        <h2 className="text-2xl font-bold text-slate-800 tracking-tight uppercase mb-8 text-center">Processamento Múltiplo Cloud</h2>
+                                    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+                                        <div className="text-center mb-8">
+                                            <h2 className="text-2xl font-bold text-slate-800">Importação em Lote</h2>
+                                            <p className="text-sm text-slate-500 mt-1 max-w-xl mx-auto">Arraste múltiplos ficheiros XML ou PDF. O sistema extrairá os dados e limpará a formatação automaticamente.</p>
+                                        </div>
                                         <FormLote onSave={salvarLote} />
                                     </div>
                                 )}
 
+                                {/* ----------------------- TAB: HISTÓRICO / BASE DE DADOS ----------------------- */}
                                 {activeTab === 'historico' && (
-                                    <div className="space-y-6 animate-fade-in">
-                                        <div className="flex flex-col lg:flex-row gap-4 items-center bg-white p-6 rounded-lg border border-slate-200 card-shadow">
-                                            <div className="flex-1 w-full relative">
-                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                                                <input className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-sm font-medium" placeholder="Procurar registro..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                    <div className="space-y-6 animate-fade-in flex flex-col h-[calc(100vh-140px)]">
+                                        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                                            <div>
+                                                <h2 className="text-2xl font-bold text-slate-800">Base de Dados</h2>
+                                                <p className="text-sm text-slate-500 mt-1">Faça a gestão completa de todas as notas fiscais processadas.</p>
                                             </div>
-                                            <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-md outline-none text-xs font-bold text-slate-600 uppercase tracking-widest hover:bg-slate-50 cursor-pointer w-full lg:w-auto">
-                                                <option value="todos">Todos Status</option>
-                                                <option value="pendente">Pendentes</option>
-                                                <option value="aguardando_amostra">Aguard. Amostras</option>
-                                                <option value="lancada">Lançadas</option>
-                                            </select>
-                                            <select value={filtroMes} onChange={e => setFiltroMes(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-md outline-none text-xs font-bold text-slate-600 uppercase tracking-widest hover:bg-slate-50 cursor-pointer w-full lg:w-auto">
-                                                <option value="todos">Mês Competência</option>
-                                                {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => <option key={m} value={m}>{m}</option>)}
-                                            </select>
+                                            
+                                            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                                                <div className="relative flex-1 lg:w-56">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
+                                                    <input className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all shadow-sm" placeholder="Procurar nota..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                                </div>
+                                                
+                                                {/* Filtro Classificacao */}
+                                                <select value={filtroClassificacao} onChange={e => setFiltroClassificacao(e.target.value)} className="py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none cursor-pointer shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                                    <option value="todas">Tipo Cadastro</option>
+                                                    <option value="padrao">Padrão</option>
+                                                    <option value="sem_cadastro">Sem Cadastro</option>
+                                                    <option value="manutencao">Manutenção</option>
+                                                </select>
+
+                                                <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} className="py-2 px-3 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none cursor-pointer shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                                                    <option value="todos">Todos Status</option>
+                                                    <option value="pendente">Pendentes</option>
+                                                    <option value="aguardando_amostra">Aguard. Amostras</option>
+                                                    <option value="lancada">Lançadas</option>
+                                                </select>
+                                            </div>
                                         </div>
 
-                                        <div className="bg-white rounded-lg border border-slate-200 card-shadow overflow-hidden flex flex-col h-full min-h-[600px]">
+                                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden min-h-[400px]">
                                             <div className="overflow-x-auto flex-1">
-                                                <table className="w-full text-left text-sm border-collapse min-w-[900px]">
-                                                    <thead className="bg-slate-50/80 border-b border-slate-200 font-bold text-slate-500 uppercase text-[10px] tracking-widest sticky top-0 z-10 backdrop-blur-md">
+                                                <table className="w-full text-left text-sm border-collapse min-w-[1050px]">
+                                                    <thead className="bg-slate-50 border-b border-slate-200 font-semibold text-slate-600 sticky top-0 z-10">
                                                         <tr>
-                                                            <th className="px-4 py-4 whitespace-nowrap">Status</th>
-                                                            <th className="px-4 py-4 whitespace-nowrap">Fatura</th>
-                                                            <th className="px-4 py-4 whitespace-nowrap">Parceiro Comercial</th>
-                                                            <th className="px-4 py-4 text-right whitespace-nowrap">Valor Bruto</th>
-                                                            <th className="px-4 py-4 text-center whitespace-nowrap">Arquivo</th>
-                                                            <th className="px-4 py-4 text-right whitespace-nowrap">Gestão</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Status</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Classificação</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Fatura</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Fornecedor</th>
+                                                            <th className="px-5 py-3.5 text-right whitespace-nowrap">Valor</th>
+                                                            <th className="px-5 py-3.5 text-center whitespace-nowrap">Anexo</th>
+                                                            <th className="px-5 py-3.5 text-right whitespace-nowrap">Ações</th>
                                                         </tr>
                                                     </thead>
                                                     {datasOrdenadas.length === 0 ? (
                                                         <tbody>
-                                                            <tr><td colSpan="6" className="py-32 text-center text-slate-400 font-medium italic">Nenhum registro localizado.</td></tr>
+                                                            <tr><td colSpan="7" className="py-20 text-center text-slate-500">Nenhum registo atende aos critérios de pesquisa.</td></tr>
                                                         </tbody>
                                                     ) : (
                                                         datasOrdenadas.map(data => (
                                                             <React.Fragment key={data}>
-                                                                <tbody className="bg-slate-100/50 border-y border-slate-200">
+                                                                <tbody className="bg-slate-50/50">
                                                                     <tr>
-                                                                        <td colSpan="6" className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">
-                                                                            <CalendarDays size={14} className="inline-block mr-2 text-blue-600 -mt-0.5"/>
-                                                                            Lançamentos do Dia: {formatData(data)}
+                                                                        <td colSpan="7" className="px-5 py-2.5 text-xs font-semibold text-slate-500 bg-slate-100/50 border-y border-slate-200">
+                                                                            <CalendarDays size={14} className="inline-block mr-1.5 text-slate-400 -mt-0.5"/>
+                                                                            Data de Lançamento: {formatData(data)}
                                                                         </td>
                                                                     </tr>
                                                                 </tbody>
-                                                                <tbody className="divide-y divide-slate-100 font-medium bg-white">
+                                                                <tbody className="divide-y divide-slate-100 bg-white">
                                                                     {notasAgrupadas[data].map(n => {
                                                                         let statusClass = 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100';
-                                                                        let rowBgClass = '';
                                                                         let statusLabel = 'Lançada';
 
                                                                         if (n.status === 'pendente') {
                                                                             statusClass = 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100';
-                                                                            rowBgClass = 'bg-amber-50/10';
                                                                             statusLabel = 'Pendente';
                                                                         } else if (n.status === 'aguardando_amostra') {
                                                                             statusClass = 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100';
-                                                                            rowBgClass = 'bg-purple-50/10';
                                                                             statusLabel = 'Aguard. Amostra';
                                                                         }
 
                                                                         return (
-                                                                            <tr key={n.id} className={`hover:bg-slate-50 transition-colors ${rowBgClass}`}>
-                                                                                <td className="px-4 py-3 whitespace-nowrap">
-                                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider border shadow-sm transition-all active:scale-95 ${statusClass}`}>
+                                                                            <tr key={n.id} className="hover:bg-slate-50 transition-colors">
+                                                                                <td className="px-5 py-3 whitespace-nowrap">
+                                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors ${statusClass}`}>
                                                                                         {statusLabel}
                                                                                     </button>
                                                                                 </td>
-                                                                                <td className="px-4 py-3 font-bold text-slate-800 whitespace-nowrap">#{n.numero}</td>
-                                                                                <td className="px-4 py-3 text-slate-500 font-medium truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
-                                                                                <td className="px-4 py-3 text-right font-bold text-slate-800 tracking-tight whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                                                <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                                                <td className="px-5 py-3 whitespace-nowrap">
+                                                                                    <select 
+                                                                                        value={n.classificacao || 'padrao'} 
+                                                                                        onChange={(e) => atualizarClassificacao(n.id, e.target.value)}
+                                                                                        className={`py-1 px-2 border rounded text-xs font-medium outline-none cursor-pointer shadow-sm transition-colors
+                                                                                            ${(n.classificacao === 'sem_cadastro' || n.classificacao === 'manutencao') 
+                                                                                                ? 'border-red-200 bg-red-50 text-red-700 focus:ring-red-500' 
+                                                                                                : 'border-slate-200 bg-white text-slate-700 focus:ring-blue-500'}`
+                                                                                        }
+                                                                                    >
+                                                                                        <option value="padrao">Padrão</option>
+                                                                                        <option value="sem_cadastro">Sem Cadastro</option>
+                                                                                        <option value="manutencao">Manutenção</option>
+                                                                                    </select>
+                                                                                </td>
+                                                                                <td className="px-5 py-3 font-medium text-slate-800 whitespace-nowrap">#{n.numero}</td>
+                                                                                <td className="px-5 py-3 text-slate-600 truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
+                                                                                <td className="px-5 py-3 text-right font-medium text-slate-800 whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                                                                                <td className="px-5 py-3 text-center whitespace-nowrap">
                                                                                     {n.arquivoNome ? (
-                                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-all" title="Ver Anexo">
-                                                                                            <Paperclip size={18}/>
+                                                                                        <button onClick={() => abrirVisualizacao(n)} className="inline-flex p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Ver Anexo">
+                                                                                            <Paperclip size={16}/>
                                                                                         </button>
                                                                                     ) : (
-                                                                                        <span className="text-slate-300" title="Sem anexo">-</span>
+                                                                                        <span className="text-slate-300">-</span>
                                                                                     )}
                                                                                 </td>
-                                                                                <td className="px-4 py-3 flex justify-end gap-1.5 whitespace-nowrap">
-                                                                                    <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all" title="Editar Registro"><Pencil size={18}/></button>
+                                                                                <td className="px-5 py-3 flex justify-end gap-1 whitespace-nowrap">
+                                                                                    <button onClick={() => setEditingNota(n)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Editar"><Pencil size={16}/></button>
                                                                                     {n.status !== 'lancada' && (
-                                                                                        <button onClick={() => marcarLancada(n.id)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded transition-all" title="Marcar como Lançada"><CheckCircle2 size={18}/></button>
+                                                                                        <button onClick={() => marcarLancada(n.id)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" title="Marcar como Lançada"><CheckCircle2 size={16}/></button>
                                                                                     )}
-                                                                                    <button onClick={() => deletarNota(n.id)} className="p-2 text-slate-300 hover:text-red-600 rounded transition-all" title="Remover"><Trash2 size={18}/></button>
+                                                                                    <button onClick={() => deletarNota(n.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remover"><Trash2 size={16}/></button>
                                                                                 </td>
                                                                             </tr>
                                                                         );
@@ -501,9 +649,9 @@
                                                     )}
                                                 </table>
                                             </div>
-                                            <div className="px-8 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-[10px] font-bold text-slate-500 tracking-widest uppercase">
-                                                <span>Registros localizados: {notasFiltradas.length}</span>
-                                                <span className="text-slate-800">Total: R$ {notasFiltradas.reduce((acc, n) => acc + parseFloat(n.valor || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs font-medium text-slate-600">
+                                                <span>{notasFiltradas.length} registos encontrados</span>
+                                                <span className="text-slate-800 font-semibold text-sm">Soma: R$ {notasFiltradas.reduce((acc, n) => acc + parseFloat(n.valor || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -518,6 +666,8 @@
         // --- COMPONENTES AUXILIARES ---
 
         const extrairDados = async (file) => {
+            const dataHoje = new Date().toISOString().split('T')[0];
+            
             if (file.name.toLowerCase().endsWith('.pdf')) {
                 try {
                     const ab = await file.arrayBuffer();
@@ -528,9 +678,18 @@
                         const content = await page.getTextContent();
                         text += content.items.map(it => it.str).join(' ') + ' ';
                     }
-                    const dataM = text.match(/(\d{2})\/(\d{2})\/(\d{4})/);
                     const valorM = text.match(/R\$\s*([\d\.]+,\d{2})/i) || text.match(/Valor.*?([\d\.]+,\d{2})/i);
-                    const numM = text.match(/(?:NF|N[oó]ta|Nº)\s*[:.-]?\s*(\d{3,})/i);
+                    
+                    // Regex avançado para capturar número, ignorando N, espaços e zeros à esquerda
+                    const numM = text.match(/(?:NF|N[oó]ta|Nº|N)\s*[:.-]?\s*0*(\d+)/i);
+                    let numLimpo = '';
+                    if (numM) {
+                        numLimpo = numM[1]; // O grupo (\d+) já pega sem os zeros iniciais se `0*` casar antes
+                    } else {
+                        // Tentar achar qualquer sequência numérica isolada como fallback
+                        const fallbackM = text.match(/(?:N\s+)?0*(\d{4,})/i);
+                        if(fallbackM) numLimpo = fallbackM[1];
+                    }
                     
                     let emitente = '';
                     const emitMatch = text.match(/(?:IDENTIFICA[CÇ][AÃ]O DO EMITENTE|NOME\/RAZ[AÃ]O SOCIAL|RAZ[AÃ]O SOCIAL)[:\s]+([A-ZÀ-Ú0-9\s\.\&\-]{5,60})/i);
@@ -542,13 +701,14 @@
                     }
 
                     return {
-                        numero: numM ? numM[1] : '',
+                        numero: numLimpo,
                         fornecedor: emitente,
-                        dataLancamento: dataM ? `${dataM[3]}-${dataM[2]}-${dataM[1]}` : new Date().toISOString().split('T')[0],
+                        dataLancamento: dataHoje, // Sempre força a data de hoje
                         valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : '',
-                        isAmostra: isAmostra
+                        isAmostra: isAmostra,
+                        classificacao: 'padrao'
                     };
-                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', isAmostra: false }; }
+                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: dataHoje, valor: '', isAmostra: false, classificacao: 'padrao' }; }
             } else {
                 const text = await file.text();
                 const xml = new DOMParser().parseFromString(text, "text/xml");
@@ -557,18 +717,23 @@
                 const natOp = get('natOp').toLowerCase();
                 const isAmostra = natOp.includes('amostra') || natOp.includes('brinde');
 
+                let numeroXml = get('nNF') || get('Numero') || get('NfseNumero') || '';
+                numeroXml = numeroXml.replace(/^0+/, ''); // Remove zeros à esquerda no XML também
+
                 return {
-                    numero: get('nNF') || get('Numero') || get('NfseNumero') || '',
+                    numero: numeroXml,
                     fornecedor: xml.getElementsByTagName('emit')[0]?.getElementsByTagName('xNome')[0]?.textContent || get('RazaoSocial') || '',
-                    dataLancamento: (get('dhEmi') || get('dEmi') || get('DataEmissao'))?.split('T')[0] || new Date().toISOString().split('T')[0],
+                    dataLancamento: dataHoje, // Sempre força a data de hoje
                     valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || '',
-                    isAmostra: isAmostra
+                    isAmostra: isAmostra,
+                    classificacao: 'padrao'
                 };
             }
         };
 
         function FormIndividual({ onSave }) {
-            const [f, setF] = useState({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', status: 'pendente' });
+            const dataHoje = new Date().toISOString().split('T')[0];
+            const [f, setF] = useState({ numero: '', fornecedor: '', dataLancamento: dataHoje, valor: '', status: 'pendente', classificacao: 'padrao' });
             const [arq, setArq] = useState(null);
             const [lendo, setLendo] = useState(false);
 
@@ -581,24 +746,37 @@
             };
 
             return (
-                <form onSubmit={e => { e.preventDefault(); onSave({...f, id: gerarID(), arquivoNome: arq?.name, arquivoDataUrl: arq?.data, dataUpload: new Date().toISOString() }); setF({ numero: '', fornecedor: '', dataLancamento: new Date().toISOString().split('T')[0], valor: '', status: 'pendente' }); setArq(null); }} className="bg-white p-10 rounded-lg border border-slate-200 card-shadow space-y-8 animate-fade-in">
-                    <div className="border border-slate-200 p-8 rounded bg-slate-50/50 text-center relative group hover:bg-blue-50/20 transition-all cursor-pointer">
+                <form onSubmit={e => { e.preventDefault(); onSave({...f, id: gerarID(), arquivoNome: arq?.name, arquivoDataUrl: arq?.data, dataUpload: new Date().toISOString() }); setF({ numero: '', fornecedor: '', dataLancamento: dataHoje, valor: '', status: 'pendente', classificacao: 'padrao' }); setArq(null); }} className="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm space-y-8">
+                    
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 bg-slate-50 text-center relative group hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer">
                         <input type="file" accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFile} />
-                        <div className={`mx-auto w-12 h-12 bg-white border border-slate-200 rounded flex items-center justify-center text-slate-400 mb-3 shadow-sm transition-all group-hover:text-blue-600 ${lendo ? 'animate-pulse' : ''}`}>
+                        <div className={`mx-auto w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 mb-3 shadow-sm transition-all group-hover:scale-110 ${lendo ? 'animate-pulse' : ''}`}>
                             <UploadCloud size={24} />
                         </div>
-                        <p className="font-bold text-slate-700 text-sm uppercase tracking-tight">{arq ? arq.name : 'Selecionar Documento Digital (XML/PDF)'}</p>
+                        <p className="font-semibold text-slate-700">{arq ? arq.name : 'Selecionar Documento Digital (XML/PDF)'}</p>
+                        <p className="text-xs text-slate-500 mt-1">O sistema extrairá os dados, aplicando a data do dia e limpando formatações</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nº Nota</label><input required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} /></div>
-                        <div className="space-y-1.5"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Data Lançamento</label><input type="date" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.dataLancamento} onChange={e => setF({...f, dataLancamento: e.target.value})} /></div>
-                        <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Parceiro / Fornecedor</label><input className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} /></div>
-                        <div className="space-y-1.5 md:col-span-2"><label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Valor Bruto (R$)</label><input type="number" step="0.01" required className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.valor} onChange={e => setF({...f, valor: e.target.value})} /></div>
-                        
-                        <div className="space-y-1.5 md:col-span-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Status de Origem</label>
-                            <select className="w-full border border-slate-200 p-3 rounded font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500/30 focus:border-blue-500 transition-all bg-slate-50/30" value={f.status} onChange={e => setF({...f, status: e.target.value})}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label className="label-premium">Nº Nota Fiscal</label>
+                            <input required className="input-premium" placeholder="Ex: 123456" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="label-premium">Data de Lançamento</label>
+                            <input type="date" required className="input-premium bg-slate-50 cursor-not-allowed" value={f.dataLancamento} readOnly title="A data padrão agora é sempre travada para o dia de hoje no preenchimento." />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="label-premium">Parceiro / Fornecedor</label>
+                            <input className="input-premium" placeholder="Nome da empresa emissora" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="label-premium">Valor Bruto (R$)</label>
+                            <input type="number" step="0.01" required className="input-premium" placeholder="0.00" value={f.valor} onChange={e => setF({...f, valor: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="label-premium">Status de Origem</label>
+                            <select className="input-premium cursor-pointer" value={f.status} onChange={e => setF({...f, status: e.target.value})}>
                                 <option value="pendente">Pendente</option>
                                 <option value="aguardando_amostra">Aguard. Amostra</option>
                                 <option value="lancada">Lançada</option>
@@ -606,9 +784,11 @@
                         </div>
                     </div>
 
-                    <button className="w-full bg-blue-700 text-white p-5 rounded font-bold text-xs hover:bg-blue-800 transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 uppercase tracking-[0.2em]">
-                        <Save size={16}/> Sincronizar na Cloud
-                    </button>
+                    <div className="pt-4 border-t border-slate-100 flex justify-end">
+                        <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2">
+                            <Save size={18}/> Salvar Registo na Cloud
+                        </button>
+                    </div>
                 </form>
             );
         }
@@ -626,41 +806,48 @@
                 setL(prev => [...prev, ...novas]); setP(false);
             };
             return (
-                <div className="space-y-8 h-full flex flex-col animate-fade-in">
-                    <div className="bg-white p-20 border-2 border-dashed border-slate-300 rounded-lg text-center relative group hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer">
+                <div className="space-y-6">
+                    <div className="bg-white p-12 border-2 border-dashed border-slate-300 rounded-xl text-center relative group hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer">
                         <input type="file" multiple accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFiles} />
-                        <div className={`mx-auto w-20 h-20 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 mb-6 transition-all group-hover:text-blue-600 group-hover:border-blue-200 ${p ? 'animate-spin' : ''}`}><UploadCloud size={40} /></div>
-                        <p className="font-bold text-xl text-slate-800 tracking-tight">Importação Múltipla de Notas</p>
-                        <p className="text-slate-400 text-xs font-medium mt-1">O sistema identifica se é venda ou amostra automaticamente</p>
+                        <div className={`mx-auto w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-4 transition-all group-hover:scale-110 ${p ? 'animate-pulse' : ''}`}>
+                            <UploadCloud size={32} />
+                        </div>
+                        <p className="font-semibold text-lg text-slate-800">Clique ou arraste ficheiros para aqui</p>
+                        <p className="text-slate-500 text-sm mt-1">Lê múltiplos XML e PDF atribuindo a data do dia e limpando números N/00</p>
                     </div>
+                    
                     {l.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden card-shadow flex flex-col flex-1 animate-fade-in">
-                            <div className="p-6 bg-slate-900 text-white font-bold flex justify-between items-center text-xs uppercase tracking-widest">
-                                <span>{l.length} Ficheiros Prontos para Nuvem</span>
-                                <button onClick={() => setL([])} className="opacity-60 hover:opacity-100 transition-opacity">Limpar fila</button>
+                        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm animate-fade-in">
+                            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                                <span className="font-semibold text-slate-800 text-sm">{l.length} Ficheiros processados</span>
+                                <button onClick={() => setL([])} className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">Limpar fila</button>
                             </div>
-                            <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                                <table className="w-full text-[11px] text-left">
-                                    <tbody className="divide-y divide-slate-100 font-medium">
+                            <div className="max-h-80 overflow-y-auto">
+                                <table className="w-full text-sm text-left">
+                                    <tbody className="divide-y divide-slate-100">
                                         {l.map(x => (
-                                            <tr key={x.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="px-8 py-4 text-slate-500 uppercase whitespace-nowrap">{x.arquivoNome}</td>
-                                                <td className="px-8 py-4 font-bold text-slate-800 whitespace-nowrap">#{x.numero || 'N/D'}</td>
-                                                <td className="px-8 py-4">
-                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${x.status === 'aguardando_amostra' ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'}`}>
+                                            <tr key={x.id} className="hover:bg-slate-50">
+                                                <td className="px-6 py-3 text-slate-600 font-medium truncate max-w-[200px]">{x.arquivoNome}</td>
+                                                <td className="px-6 py-3 font-medium text-slate-800">#{x.numero || '---'}</td>
+                                                <td className="px-6 py-3">
+                                                    <span className={`px-2 py-1 rounded text-xs font-medium ${x.status === 'aguardando_amostra' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
                                                         {x.status === 'aguardando_amostra' ? 'Amostra' : 'Venda'}
                                                     </span>
                                                 </td>
-                                                <td className="px-8 py-4 text-right font-bold text-blue-700 text-xs whitespace-nowrap">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR')}</td>
-                                                <td className="px-8 py-4 text-right whitespace-nowrap"><button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-300 hover:text-red-500 p-2"><Trash2 size={16}/></button></td>
+                                                <td className="px-6 py-3 text-right font-medium text-slate-800">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                                                <td className="px-6 py-3 text-right">
+                                                    <button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-400 hover:text-red-500 p-1.5 rounded-md hover:bg-slate-100 transition-colors"><Trash2 size={16}/></button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-                            <button onClick={() => { onSave(l); setL([]); }} className="w-full bg-blue-700 text-white p-6 font-bold text-sm hover:bg-blue-800 transition-all uppercase tracking-[0.2em] shadow-inner">
-                                Confirmar Importação em Massa
-                            </button>
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button onClick={() => { onSave(l); setL([]); }} className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                                    Confirmar Importação de {l.length} Registos
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -669,23 +856,14 @@
 
         function SidebarItem({ active, onClick, icon, label, expanded, badge }) {
             return (
-                <button onClick={onClick} className={`w-full flex items-center justify-between p-4 px-6 transition-all font-semibold text-xs uppercase tracking-widest ${active ? 'sidebar-active shadow-sm' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-50'}`}>
-                    <div className="flex items-center gap-4">{icon} <span className={!expanded ? 'hidden' : ''}>{label}</span></div>
-                    {badge > 0 && expanded && <span className="bg-amber-100 text-amber-800 text-[9px] px-2 py-0.5 rounded border border-amber-200 font-black tracking-tighter">{badge}</span>}
-                </button>
-            );
-        }
-        
-        function StatCard({ title, val, icon, bgIcon, highlight }) {
-            return (
-                <div className={`bg-white p-4 lg:p-5 rounded border border-slate-200 relative card-shadow group transition-all duration-300 ${highlight ? 'border-amber-200 bg-amber-50/5' : 'hover:border-blue-200'} flex items-center overflow-hidden`}>
-                    <div className="flex justify-between items-center gap-3 w-full">
-                        <div className="min-w-0 flex-1 overflow-hidden">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 truncate">{title}</p>
-                            <h2 className="text-base sm:text-lg lg:text-xl font-black text-slate-800 tracking-tighter truncate" title={val}>{val}</h2>
+                <div className="px-3">
+                    <button onClick={onClick} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all text-sm relative ${active ? 'sidebar-active bg-blue-50' : 'text-slate-600 hover:bg-slate-100 font-medium'}`}>
+                        <div className="flex items-center gap-3">
+                            <span className={active ? 'text-blue-600' : 'text-slate-400'}>{icon}</span> 
+                            <span className={!expanded ? 'hidden' : ''}>{label}</span>
                         </div>
-                        <div className={`p-2 lg:p-3 rounded-lg transition-all border border-slate-100 shrink-0 ${bgIcon}`}>{icon}</div>
-                    </div>
+                        {badge > 0 && expanded && <span className="bg-amber-100 text-amber-700 text-xs px-2 py-0.5 rounded-full font-bold">{badge}</span>}
+                    </button>
                 </div>
             );
         }
