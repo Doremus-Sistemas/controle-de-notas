@@ -147,6 +147,9 @@
             const [filtroStatus, setFiltroStatus] = useState('todos');
             const [filtroMes, setFiltroMes] = useState('todos');
             const [filtroClassificacao, setFiltroClassificacao] = useState('todas');
+            
+            const [modalAmostra, setModalAmostra] = useState(null);
+            const [notaParaDeletar, setNotaParaDeletar] = useState(null);
 
             useEffect(() => {
                 const notasRef = ref(db, 'notasFiscais');
@@ -180,10 +183,10 @@
             const salvarEdicao = async (e) => {
                 e.preventDefault();
                 try {
-                    const { id, valor, dataLancamento, numero, fornecedor, status } = editingNota;
-                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento, numero, fornecedor, status });
+                    const { id, valor, dataLancamento, numero, fornecedor, status, codigosAmostra } = editingNota;
+                    await update(ref(db, 'notasFiscais/' + id), { valor, dataLancamento, numero, fornecedor, status, codigosAmostra: codigosAmostra || null });
                     setEditingNota(null);
-                } catch (e) { alert("Erro ao atualizar dados."); }
+                } catch (e) { console.error("Erro ao atualizar dados."); }
             };
 
             const salvarLote = async (lote) => {
@@ -192,20 +195,37 @@
                 setCarregando(false);
             };
 
-            const deletarNota = async (id) => {
-                if(window.confirm('Tem a certeza que pretende excluir este registo permanentemente?')) {
-                    await remove(ref(db, 'notasFiscais/' + id));
-                    await remove(ref(db, 'arquivos/' + id));
+            const deletarNota = (nota) => {
+                setNotaParaDeletar(nota);
+            };
+
+            const confirmarDeletar = async (id) => {
+                await remove(ref(db, 'notasFiscais/' + id));
+                await remove(ref(db, 'arquivos/' + id));
+                setNotaParaDeletar(null);
+            };
+
+            const alternarStatus = async (nota) => {
+                let novoStatus = 'pendente';
+                if (nota.status === 'pendente') novoStatus = 'aguardando_amostra';
+                else if (nota.status === 'aguardando_amostra') novoStatus = 'lancada';
+                else novoStatus = 'pendente';
+                
+                await update(ref(db, 'notasFiscais/' + nota.id), { status: novoStatus });
+
+                if (novoStatus === 'aguardando_amostra') {
+                    setModalAmostra({ ...nota, tempCode: nota.codigosAmostra || 'AM' });
                 }
             };
 
-            const alternarStatus = async (id, statusAtual) => {
-                let novoStatus = 'pendente';
-                if (statusAtual === 'pendente') novoStatus = 'aguardando_amostra';
-                else if (statusAtual === 'aguardando_amostra') novoStatus = 'lancada';
-                else novoStatus = 'pendente';
-                
-                await update(ref(db, 'notasFiscais/' + id), { status: novoStatus });
+            const salvarCodigoAmostra = async (e) => {
+                e.preventDefault();
+                try {
+                    await update(ref(db, 'notasFiscais/' + modalAmostra.id), { codigosAmostra: modalAmostra.tempCode });
+                    setModalAmostra(null);
+                } catch (error) {
+                    console.error("Erro ao salvar código da amostra.");
+                }
             };
 
             const marcarLancada = async (id) => {
@@ -254,6 +274,54 @@
             return (
                 <div className="flex h-screen bg-slate-50 overflow-hidden text-slate-800">
                     
+                    {/* MODAL DE DELEÇÃO (Customizado) */}
+                    {notaParaDeletar && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+                            <div className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200">
+                                <div className="p-6 text-center space-y-4">
+                                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <Trash2 size={32} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800">Excluir Registo?</h3>
+                                    <p className="text-sm text-slate-500">Tem certeza que pretende excluir permanentemente a fatura <strong>#{notaParaDeletar.numero}</strong>? Esta ação não pode ser desfeita.</p>
+                                </div>
+                                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-center">
+                                    <button type="button" onClick={() => setNotaParaDeletar(null)} className="px-5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Cancelar</button>
+                                    <button type="button" onClick={() => confirmarDeletar(notaParaDeletar.id)} className="px-5 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm transition-colors">
+                                        Sim, Excluir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL CÓDIGO DA AMOSTRA */}
+                    {modalAmostra && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+                            <form onSubmit={salvarCodigoAmostra} className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200">
+                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                                        <Package size={18} className="text-purple-600"/> Código da Amostra
+                                    </h3>
+                                    <button type="button" onClick={() => setModalAmostra(null)} className="p-1.5 hover:bg-slate-200 rounded-md text-slate-400 transition-colors"><X size={18}/></button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <p className="text-sm text-slate-500">Insira o código da amostra para a Fatura <strong>#{modalAmostra.numero}</strong>.</p>
+                                    <div>
+                                        <label className="label-premium">Código(s) (Iniciam com AM)</label>
+                                        <input required autoFocus className="input-premium border-purple-200 focus:border-purple-500 focus:ring-purple-500/20" placeholder="Ex: AM123, AM456" value={modalAmostra.tempCode} onChange={e => setModalAmostra({...modalAmostra, tempCode: e.target.value})} />
+                                    </div>
+                                </div>
+                                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end">
+                                    <button type="button" onClick={() => setModalAmostra(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Mais tarde</button>
+                                    <button type="submit" className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm transition-colors">
+                                        Salvar Código
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
                     {/* MODAL DE EDIÇÃO */}
                     {editingNota && (
                         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
@@ -292,6 +360,12 @@
                                                 <option value="lancada">Lançada</option>
                                             </select>
                                         </div>
+                                        {editingNota.status === 'aguardando_amostra' && (
+                                            <div className="col-span-2">
+                                                <label className="label-premium flex items-center gap-1"><Package size={14}/> Códigos da Amostra (AM)</label>
+                                                <input className="input-premium border-purple-200 focus:border-purple-500 focus:ring-purple-500/20" placeholder="Ex: AM123, AM456" value={editingNota.codigosAmostra || ''} onChange={e => setEditingNota({...editingNota, codigosAmostra: e.target.value})} />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end">
@@ -602,7 +676,7 @@
                                                                         return (
                                                                             <tr key={n.id} className="hover:bg-slate-50 transition-colors">
                                                                                 <td className="px-5 py-3 whitespace-nowrap">
-                                                                                    <button onClick={() => alternarStatus(n.id, n.status)} className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors ${statusClass}`}>
+                                                                                    <button onClick={() => alternarStatus(n)} className={`px-2.5 py-1 rounded text-[11px] font-semibold border transition-colors ${statusClass}`}>
                                                                                         {statusLabel}
                                                                                     </button>
                                                                                 </td>
@@ -621,7 +695,21 @@
                                                                                         <option value="manutencao">Manutenção</option>
                                                                                     </select>
                                                                                 </td>
-                                                                                <td className="px-5 py-3 font-medium text-slate-800 whitespace-nowrap">#{n.numero}</td>
+                                                                                <td className="px-5 py-3 font-medium text-slate-800 whitespace-nowrap">
+                                                                                    <div className="flex flex-col items-start gap-1">
+                                                                                        <span>#{n.numero}</span>
+                                                                                        {n.codigosAmostra && (
+                                                                                            <span onClick={() => setModalAmostra({ ...n, tempCode: n.codigosAmostra })} className="text-[10px] text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200 flex items-center gap-1 cursor-pointer hover:bg-purple-200 transition-colors" title="Editar código">
+                                                                                                <Package size={10}/> {n.codigosAmostra}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        {n.status === 'aguardando_amostra' && !n.codigosAmostra && (
+                                                                                            <button onClick={() => setModalAmostra({ ...n, tempCode: 'AM' })} className="text-[10px] text-purple-600 hover:text-purple-800 flex items-center gap-1 font-semibold mt-0.5">
+                                                                                                <Plus size={10}/> Inserir Código AM
+                                                                                            </button>
+                                                                                        )}
+                                                                                    </div>
+                                                                                </td>
                                                                                 <td className="px-5 py-3 text-slate-600 truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
                                                                                 <td className="px-5 py-3 text-right font-medium text-slate-800 whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
                                                                                 <td className="px-5 py-3 text-center whitespace-nowrap">
@@ -638,7 +726,7 @@
                                                                                     {n.status !== 'lancada' && (
                                                                                         <button onClick={() => marcarLancada(n.id)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" title="Marcar como Lançada"><CheckCircle2 size={16}/></button>
                                                                                     )}
-                                                                                    <button onClick={() => deletarNota(n.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remover"><Trash2 size={16}/></button>
+                                                                                    <button onClick={() => deletarNota(n)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Remover"><Trash2 size={16}/></button>
                                                                                 </td>
                                                                             </tr>
                                                                         );
