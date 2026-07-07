@@ -133,7 +133,7 @@
             TrendingUp, Calendar, AlertCircle, Clock, Package, CheckCircle2,
             Filter, CalendarDays, Menu, X, FilePlus, UploadCloud, Check, Save,
             ArrowRight, RefreshCw, FileText, Briefcase, Pencil, XCircle, User,
-            ChevronRight, Cloud, Settings, Building2, Tag, ChevronDown
+            ChevronRight, Cloud, Settings, Building2, Tag, ChevronDown, Mail, Copy, CheckSquare
         } from 'lucide-react';
         
         import { initializeApp } from 'firebase/app';
@@ -190,6 +190,12 @@
             
             const [modalAmostra, setModalAmostra] = useState(null);
             const [notaParaDeletar, setNotaParaDeletar] = useState(null);
+            
+            // Novos estados para a seleção e envio de e-mail
+            const [notasSelecionadas, setNotasSelecionadas] = useState([]);
+            const [modalEmailHtml, setModalEmailHtml] = useState(null);
+            const [copiado, setCopiado] = useState(false);
+            const [modoSelecao, setModoSelecao] = useState(false);
 
             useEffect(() => {
                 const notasRef = ref(db, 'notasFiscais');
@@ -296,6 +302,113 @@
                 } catch (e) { setPreviewNota(null); }
             };
 
+            // Novas funções para seleção e geração do E-mail
+            const handleSelectNota = (id) => {
+                setNotasSelecionadas(prev => prev.includes(id) ? prev.filter(nId => nId !== id) : [...prev, id]);
+            };
+
+            const handleSelectAll = (e) => {
+                if (e.target.checked) {
+                    setNotasSelecionadas(notasFiltradas.map(n => n.id));
+                } else {
+                    setNotasSelecionadas([]);
+                }
+            };
+
+            const toggleModoSelecao = () => {
+                if (modoSelecao) {
+                    setNotasSelecionadas([]); // Limpa a seleção ao sair do modo
+                }
+                setModoSelecao(!modoSelecao);
+            };
+
+            const abrirModalEmail = () => {
+                const hora = new Date().getHours();
+                let saudacao = 'Bom dia';
+                if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
+                else if (hora >= 18) saudacao = 'Boa noite';
+
+                const notasEmail = notasSelecionadas.map(id => notas.find(n => n.id === id)).filter(Boolean);
+
+                // Construção do e-mail em formato HTML corporativo e alinhado
+                let html = `
+                    <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
+                        <p style="margin-bottom: 16px;">Olá, ${saudacao.toLowerCase()}.</p>
+                        <p style="margin-bottom: 24px;">Seguem os dados para classificação das notas e seus respectivos centros de custo:</p>
+                        
+                        <table style="border-collapse: collapse; width: 100%; max-width: 650px; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <thead>
+                                <tr style="background-color: #1e40af; color: #ffffff;">
+                                    <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Nota / Fatura</th>
+                                    <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 50%;">Código(s) AM</th>
+                                    <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Centro de Custo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                notasEmail.forEach((n, index) => {
+                    let amostra = n.codigosAmostra || '-';
+                    let cc = n.centroCusto || '-';
+                    
+                    // Regra de ouro para o AM1484 e CC 2232
+                    if (amostra.toUpperCase().includes('AM1484') && cc.includes('2232')) {
+                        amostra += ' <em>(Análise laboratorial)</em>';
+                    }
+                    
+                    // Fundo intercalado: branco e cinza bem clarinho (mais profissional que azul claro)
+                    const bgRow = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    
+                    html += `
+                                <tr style="background-color: ${bgRow};">
+                                    <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a;"><strong>${n.numero}</strong></td>
+                                    <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #334155;">${amostra}</td>
+                                    <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #334155;">${cc}</td>
+                                </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 24px;">Atenciosamente,</p>
+                    </div>
+                `;
+                
+                setModalEmailHtml(html);
+                setCopiado(false);
+            };
+
+            const copiarParaClipboard = () => {
+                // Cria um elemento temporário invisível para copiar o HTML renderizado
+                const container = document.createElement('div');
+                container.innerHTML = modalEmailHtml;
+                container.style.position = 'fixed';
+                container.style.pointerEvents = 'none';
+                container.style.opacity = 0;
+                document.body.appendChild(container);
+
+                // Seleciona o conteúdo do container
+                const range = document.createRange();
+                range.selectNode(container);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                try {
+                    // Copia com formatação
+                    document.execCommand('copy');
+                    setCopiado(true);
+                    setTimeout(() => setCopiado(false), 2000);
+                } catch (err) {
+                    console.error('Falha ao copiar:', err);
+                }
+
+                // Limpa e remove
+                selection.removeAllRanges();
+                document.body.removeChild(container);
+            };
+
             // Processamento de Filtros e Agrupamento
             const notasFiltradas = notas.filter(n => {
                 const matchBusca = n.numero?.includes(searchTerm) || (n.fornecedor && n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -373,6 +486,36 @@
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    )}
+
+                    {/* MODAL GERADOR DE EMAIL (COM TABELA HTML) */}
+                    {modalEmailHtml !== null && (
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+                            <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden border border-slate-200 animate-scale-in flex flex-col max-h-[90vh]">
+                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                                        <Mail size={18} className="text-purple-600"/> Pré-visualização do E-mail
+                                    </h3>
+                                    <button type="button" onClick={() => setModalEmailHtml(null)} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors"><X size={18}/></button>
+                                </div>
+                                <div className="p-6 flex-1 overflow-y-auto bg-slate-100/50">
+                                    <p className="text-sm text-slate-500 mb-4 font-medium">Esta é a visão de como a tabela ficará no corpo do seu e-mail (Outlook/Gmail). Clique no botão abaixo para copiar.</p>
+                                    
+                                    {/* Preview container (Renderiza o HTML real na tela) */}
+                                    <div className="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm overflow-x-auto" 
+                                         dangerouslySetInnerHTML={{ __html: modalEmailHtml }}>
+                                    </div>
+                                    
+                                </div>
+                                <div className="p-5 bg-white border-t border-slate-100 flex gap-3 justify-end rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+                                    <button type="button" onClick={() => setModalEmailHtml(null)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Fechar</button>
+                                    <button type="button" onClick={copiarParaClipboard} className={`px-6 py-2.5 text-sm font-bold text-white rounded-lg shadow-sm transition-colors flex items-center gap-2 ${copiado ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-purple-600 hover:bg-purple-700'}`}>
+                                        {copiado ? <Check size={18}/> : <Copy size={18}/>}
+                                        {copiado ? 'Tabela Copiada!' : 'Copiar para o E-mail'}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -676,6 +819,10 @@
                                             </div>
                                             
                                             <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                                                <button onClick={toggleModoSelecao} className={`px-4 py-2.5 border rounded-xl text-sm font-semibold outline-none shadow-sm transition-all flex items-center gap-2 ${modoSelecao ? 'bg-purple-100 border-purple-300 text-purple-700 hover:bg-purple-200' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-purple-600 focus:ring-4 focus:ring-blue-500/10'}`}>
+                                                    <CheckSquare size={16}/> {modoSelecao ? 'Sair da Seleção' : 'Selecionar Notas'}
+                                                </button>
+                                                
                                                 <div className="relative flex-1 lg:w-64">
                                                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
                                                     <input className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm bg-slate-50" placeholder="Procurar fatura, fornecedor..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -697,11 +844,40 @@
                                             </div>
                                         </div>
 
+                                        {/* BARRA DE AÇÃO - EMAIL (Aparece apenas quando tem notas selecionadas) */}
+                                        {notasSelecionadas.length > 0 && (
+                                            <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl flex justify-between items-center shadow-sm animate-fade-in">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-purple-100 text-purple-600 p-2.5 rounded-xl shadow-sm">
+                                                        <CheckSquare size={20} strokeWidth={2.5} />
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-extrabold text-purple-800 block text-[15px]">{notasSelecionadas.length} nota(s) selecionada(s)</span>
+                                                        <span className="text-xs font-semibold text-purple-600">Pronto para gerar e-mail com os dados de classificação.</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => setNotasSelecionadas([])} className="text-purple-600 text-sm font-bold hover:bg-purple-100 px-4 py-2.5 rounded-lg transition-colors">Cancelar Seleção</button>
+                                                    <button onClick={abrirModalEmail} className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm shadow-purple-200 hover:bg-purple-700 hover:shadow-md transition-all flex items-center gap-2">
+                                                        <Mail size={16} strokeWidth={2.5}/> Gerar E-mail
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden min-h-[400px]">
                                             <div className="overflow-x-auto flex-1">
                                                 <table className="w-full text-left text-sm border-collapse min-w-[1100px]">
                                                     <thead className="bg-slate-100/80 border-b border-slate-200 font-bold text-slate-600 sticky top-0 z-10 text-xs uppercase tracking-wider">
                                                         <tr>
+                                                            {modoSelecao && (
+                                                                <th className="px-5 py-4 w-12 text-center animate-fade-in">
+                                                                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-sm" 
+                                                                        checked={notasSelecionadas.length > 0 && notasSelecionadas.length === notasFiltradas.length}
+                                                                        onChange={handleSelectAll}
+                                                                    />
+                                                                </th>
+                                                            )}
                                                             <th className="px-6 py-4 whitespace-nowrap">Status</th>
                                                             <th className="px-6 py-4 whitespace-nowrap">Classificação</th>
                                                             <th className="px-6 py-4 whitespace-nowrap">Fatura / Detalhes</th>
@@ -713,14 +889,14 @@
                                                     </thead>
                                                     {datasOrdenadas.length === 0 ? (
                                                         <tbody>
-                                                            <tr><td colSpan="7" className="py-20 text-center font-medium text-slate-500 bg-slate-50">Nenhum registo atende aos critérios de pesquisa.</td></tr>
+                                                            <tr><td colSpan={modoSelecao ? "8" : "7"} className="py-20 text-center font-medium text-slate-500 bg-slate-50">Nenhum registo atende aos critérios de pesquisa.</td></tr>
                                                         </tbody>
                                                     ) : (
                                                         datasOrdenadas.map(data => (
                                                             <React.Fragment key={data}>
                                                                 <tbody className="bg-slate-50">
                                                                     <tr>
-                                                                        <td colSpan="7" className="px-6 py-2.5 text-xs font-bold text-slate-500 border-y border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.01)]">
+                                                                        <td colSpan={modoSelecao ? "8" : "7"} className="px-6 py-2.5 text-xs font-bold text-slate-500 border-y border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.01)]">
                                                                             <CalendarDays size={14} className="inline-block mr-2 text-slate-400 -mt-0.5"/>
                                                                             Lançamentos do dia: {formatData(data)}
                                                                         </td>
@@ -732,7 +908,15 @@
                                                                         const classConf = getClassificacaoConfig(n.classificacao);
 
                                                                         return (
-                                                                        <tr key={n.id} className="hover:bg-blue-50/40 transition-colors group">
+                                                                        <tr key={n.id} className={`transition-colors group ${notasSelecionadas.includes(n.id) ? 'bg-purple-50/50' : 'hover:bg-blue-50/40'}`}>
+                                                                            {modoSelecao && (
+                                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap animate-fade-in">
+                                                                                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-sm"
+                                                                                        checked={notasSelecionadas.includes(n.id)}
+                                                                                        onChange={() => handleSelectNota(n.id)}
+                                                                                    />
+                                                                                </td>
+                                                                            )}
                                                                             <td className="px-6 py-3.5 whitespace-nowrap">
                                                                                 <button onClick={() => alternarStatus(n)} className={`px-2.5 py-1.5 rounded-md text-xs font-bold border transition-all shadow-sm flex items-center gap-1.5 ${stConf.class}`}>
                                                                                     {stConf.icon} {stConf.label}
