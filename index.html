@@ -245,6 +245,11 @@
                 setCarregando(false);
             };
 
+            // FIX: Restauração da função de deletar nota
+            const deletarNota = (nota) => {
+                setNotaParaDeletar(nota);
+            };
+
             const confirmarDeletar = async (id) => {
                 await remove(ref(db, 'notasFiscais/' + id));
                 await remove(ref(db, 'arquivos/' + id));
@@ -317,7 +322,7 @@
 
             const toggleModoSelecao = () => {
                 if (modoSelecao) {
-                    setNotasSelecionadas([]); // Limpa a seleção ao sair do modo
+                    setNotasSelecionadas([]);
                 }
                 setModoSelecao(!modoSelecao);
             };
@@ -330,57 +335,99 @@
 
                 const notasEmail = notasSelecionadas.map(id => notas.find(n => n.id === id)).filter(Boolean);
 
-                // Construção do e-mail em formato HTML corporativo e alinhado
-                let html = `
-                    <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
-                        <p style="margin-bottom: 16px;">Olá, ${saudacao.toLowerCase()}.</p>
-                        <p style="margin-bottom: 24px;">Seguem os dados para classificação das notas e seus respectivos centros de custo:</p>
-                        
-                        <table style="border-collapse: collapse; width: 100%; max-width: 650px; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                            <thead>
-                                <tr style="background-color: #1e40af; color: #ffffff;">
-                                    <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Nota / Fatura</th>
-                                    <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 50%;">Código(s) AM</th>
-                                    <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Centro de Custo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
+                // Verifica se há alguma nota classificada como amostra ou se tem código AM
+                const containsAmostras = notasEmail.some(n => n.status === 'aguardando_amostra' || n.codigosAmostra);
 
-                notasEmail.forEach((n, index) => {
-                    let amostra = n.codigosAmostra || '-';
-                    let cc = n.centroCusto || '-';
-                    
-                    // Regra de ouro para o AM1484 e CC 2232
-                    if (amostra.toUpperCase().includes('AM1484') && cc.includes('2232')) {
-                        amostra += ' <em>(Análise laboratorial)</em>';
-                    }
-                    
-                    // Fundo intercalado: branco e cinza bem clarinho (mais profissional que azul claro)
-                    const bgRow = index % 2 === 0 ? '#ffffff' : '#f8fafc';
-                    
-                    html += `
-                                <tr style="background-color: ${bgRow};">
-                                    <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a;"><strong>${n.numero}</strong></td>
-                                    <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #334155;">${amostra}</td>
-                                    <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #334155;">${cc}</td>
-                                </tr>
+                let html = '';
+
+                if (containsAmostras) {
+                    // EMAIL TIPO 1: AMOSTRAS E CENTROS DE CUSTO
+                    html = `
+                        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
+                            <p style="margin-bottom: 16px;">Olá, ${saudacao.toLowerCase()}.</p>
+                            <p style="margin-bottom: 24px;">Seguem os dados para classificação das notas e seus respectivos centros de custo:</p>
+                            
+                            <table style="border-collapse: collapse; width: 100%; max-width: 650px; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <thead>
+                                    <tr style="background-color: #1e40af; color: #ffffff;">
+                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Nota / Fatura</th>
+                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 50%;">Código(s) AM</th>
+                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Centro de Custo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                     `;
-                });
 
-                html += `
-                            </tbody>
-                        </table>
-                        <p style="margin-top: 24px;">Atenciosamente,</p>
-                    </div>
-                `;
+                    notasEmail.forEach((n, index) => {
+                        let amostra = n.codigosAmostra || '-';
+                        let cc = n.centroCusto || '-';
+                        
+                        if (amostra.toUpperCase().includes('AM1484') && cc.includes('2232')) {
+                            amostra += ' <em>(Análise laboratorial)</em>';
+                        }
+                        
+                        const bgRow = index % 2 === 0 ? '#ffffff' : '#f0f9ff';
+                        
+                        html += `
+                                    <tr style="background-color: ${bgRow};">
+                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a;"><strong>${n.numero}</strong></td>
+                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">${amostra}</td>
+                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">${cc}</td>
+                                    </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                            <p style="margin-top: 24px;">Atenciosamente,</p>
+                        </div>
+                    `;
+
+                } else {
+                    // EMAIL TIPO 2: NOTAS NORMAIS (CLASSIFICAÇÃO)
+                    html = `
+                        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
+                            <p style="margin-bottom: 16px;">Olá, ${saudacao.toLowerCase()}.</p>
+                            <p style="margin-bottom: 24px;">Os números das notas e os nomes dos fornecedores seguem abaixo para classificação (arquivos em anexo):</p>
+                            
+                            <table style="border-collapse: collapse; width: 100%; max-width: 650px; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                                <thead>
+                                    <tr style="background-color: #1e40af; color: #ffffff;">
+                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Nota / Fatura</th>
+                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 50%;">Fornecedor</th>
+                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Valor Bruto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    notasEmail.forEach((n, index) => {
+                        const bgRow = index % 2 === 0 ? '#ffffff' : '#f0f9ff';
+                        const valorFormatado = parseFloat(n.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                        
+                        html += `
+                                    <tr style="background-color: ${bgRow};">
+                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a;"><strong>${n.numero}</strong></td>
+                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">${n.fornecedor || '---'}</td>
+                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">R$ ${valorFormatado}</td>
+                                    </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                            <p style="margin-top: 24px;">Atenciosamente,</p>
+                        </div>
+                    `;
+                }
                 
                 setModalEmailHtml(html);
                 setCopiado(false);
             };
 
             const copiarParaClipboard = () => {
-                // Cria um elemento temporário invisível para copiar o HTML renderizado
                 const container = document.createElement('div');
                 container.innerHTML = modalEmailHtml;
                 container.style.position = 'fixed';
@@ -388,7 +435,6 @@
                 container.style.opacity = 0;
                 document.body.appendChild(container);
 
-                // Seleciona o conteúdo do container
                 const range = document.createRange();
                 range.selectNode(container);
                 const selection = window.getSelection();
@@ -396,7 +442,6 @@
                 selection.addRange(range);
 
                 try {
-                    // Copia com formatação
                     document.execCommand('copy');
                     setCopiado(true);
                     setTimeout(() => setCopiado(false), 2000);
@@ -404,7 +449,6 @@
                     console.error('Falha ao copiar:', err);
                 }
 
-                // Limpa e remove
                 selection.removeAllRanges();
                 document.body.removeChild(container);
             };
@@ -853,7 +897,7 @@
                                                     </div>
                                                     <div>
                                                         <span className="font-extrabold text-purple-800 block text-[15px]">{notasSelecionadas.length} nota(s) selecionada(s)</span>
-                                                        <span className="text-xs font-semibold text-purple-600">Pronto para gerar e-mail com os dados de classificação.</span>
+                                                        <span className="text-xs font-semibold text-purple-600">Pronto para gerar e-mail com os dados da seleção.</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
