@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,30 @@
     
     <!-- Framework Visual (Tailwind CSS) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
+                        'card': '0 0 0 1px rgba(0,0,0,0.05), 0 2px 10px -1px rgba(0,0,0,0.06)'
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Biblioteca de Leitura de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
@@ -17,10 +41,10 @@
         }
     </script>
 
-    <!-- Compilador React -->
+    <!-- Compilador React (Babel) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Módulos Externos -->
+    <!-- Módulos Externos com Importmap -->
     <script type="importmap">
     {
         "imports": {
@@ -35,90 +59,102 @@
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
         
+        * {
+            box-sizing: border-box;
+        }
+
         html, body { 
             height: 100%; 
             margin: 0; 
             padding: 0; 
-            background-color: #f1f5f9; 
+            background-color: #f8fafc; 
             overflow: hidden; 
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             color: #0f172a;
+            -webkit-font-smoothing: antialiased;
         }
         #root { height: 100%; }
 
-        /* Scrollbar customizada e moderna */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        .font-mono-numbers {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Animações suaves */
-        .animate-fade-in { animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .animate-fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        .animate-scale-in { animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes scaleIn {
-            from { opacity: 0; transform: scale(0.95); }
-            to { opacity: 1; transform: scale(1); }
+            from { opacity: 0; transform: scale(0.97) translateY(4px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
         }
+        .animate-scale-in { animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-        /* Classes utilitárias Premium */
         .sidebar-active {
+            background-color: #f0fdf4;
+            color: #15803d;
+            font-weight: 700;
+        }
+        .sidebar-active-brand {
             background-color: #eff6ff;
             color: #2563eb;
-            font-weight: 600;
+            font-weight: 700;
+            position: relative;
         }
-        .sidebar-active::before {
+        .sidebar-active-brand::before {
             content: '';
             position: absolute;
             left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background-color: #2563eb;
+            top: 6px;
+            bottom: 6px;
+            width: 3.5px;
+            background: linear-gradient(to bottom, #3b82f6, #2563eb);
             border-top-right-radius: 4px;
             border-bottom-right-radius: 4px;
         }
         
         .input-premium {
             width: 100%;
-            border: 1px solid #cbd5e1;
-            padding: 0.625rem 1rem;
-            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            padding: 0.65rem 0.875rem;
+            border-radius: 0.75rem;
             font-size: 0.875rem;
             color: #1e293b;
-            background-color: #fff;
+            background-color: #ffffff;
             outline: none;
             transition: all 0.2s ease;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
         }
         .input-premium:focus {
             border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
         }
         
         .label-premium {
             display: flex;
             align-items: center;
             gap: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.72rem;
+            font-weight: 700;
             color: #475569;
             margin-bottom: 0.375rem;
             text-transform: uppercase;
-            letter-spacing: 0.025em;
+            letter-spacing: 0.04em;
         }
 
-        /* Glassmorphism sutil para modais */
-        .glass-modal {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
         }
     </style>
 </head>
@@ -126,14 +162,15 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect } from 'react';
+        import React, { useState, useEffect, useMemo, useRef } from 'react';
         import { createRoot } from 'react-dom/client';
         import { 
             Plus, List, LayoutDashboard, Upload, Trash2, Search, Paperclip,
             TrendingUp, Calendar, AlertCircle, Clock, Package, CheckCircle2,
             Filter, CalendarDays, Menu, X, FilePlus, UploadCloud, Check, Save,
             ArrowRight, RefreshCw, FileText, Briefcase, Pencil, XCircle, User,
-            ChevronRight, Cloud, Settings, Building2, Tag, ChevronDown, Mail, Copy, CheckSquare
+            ChevronRight, Cloud, Settings, Building2, Tag, ChevronDown, Mail, Copy, 
+            CheckSquare, MessageSquare, AlertTriangle, ShieldCheck, ExternalLink, HelpCircle
         } from 'lucide-react';
         
         import { initializeApp } from 'firebase/app';
@@ -152,24 +189,54 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const gerarID = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        const gerarID = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
 
-        // -- Funções Auxiliares de Estilização / UI --
+        // Helper para formato monetário e datas
+        const formatMoeda = (val) => {
+            const num = parseFloat(val) || 0;
+            return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const formatData = (s) => { 
+            if (!s) return '-'; 
+            const p = s.split('-'); 
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s; 
+        };
+
         const getStatusConfig = (status) => {
             switch(status) {
                 case 'lancada': 
-                    return { label: 'Lançada', class: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100', icon: <CheckCircle2 size={12}/> };
+                    return { 
+                        label: 'Lançada', 
+                        class: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100', 
+                        dot: 'bg-emerald-500',
+                        icon: <CheckCircle2 size={13}/> 
+                    };
                 case 'aguardando_amostra': 
-                    return { label: 'Aguard. Amostra', class: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100', icon: <Package size={12}/> };
-                case 'pendente': default: 
-                    return { label: 'Pendente', class: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100', icon: <Clock size={12}/> };
+                    return { 
+                        label: 'Aguard. Amostra', 
+                        class: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100', 
+                        dot: 'bg-purple-500',
+                        icon: <Package size={13}/> 
+                    };
+                case 'pendente': 
+                default: 
+                    return { 
+                        label: 'Pendente', 
+                        class: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100', 
+                        dot: 'bg-amber-500',
+                        icon: <Clock size={13}/> 
+                    };
             }
         };
 
         const getClassificacaoConfig = (classificacao) => {
             const padrao = classificacao || 'padrao';
-            if (padrao === 'sem_cadastro' || padrao === 'manutencao') {
-                return 'border-red-200 bg-red-50 text-red-700 focus:ring-red-500';
+            if (padrao === 'sem_cadastro') {
+                return 'border-rose-200 bg-rose-50 text-rose-700 focus:ring-rose-500';
+            }
+            if (padrao === 'manutencao') {
+                return 'border-amber-200 bg-amber-50 text-amber-700 focus:ring-amber-500';
             }
             return 'border-slate-200 bg-white text-slate-700 focus:ring-blue-500';
         };
@@ -184,31 +251,49 @@
             const [carregando, setCarregando] = useState(true);
             const [erroConexao, setErroConexao] = useState(false);
             
+            // Filtros da Base de Dados
             const [filtroStatus, setFiltroStatus] = useState('todos');
-            const [filtroMes, setFiltroMes] = useState('todos');
             const [filtroClassificacao, setFiltroClassificacao] = useState('todas');
+            const [filtroJustificativa, setFiltroJustificativa] = useState('todas'); // todas, com_obs, sem_obs
             
+            // Modais de ação
             const [modalAmostra, setModalAmostra] = useState(null);
             const [notaParaDeletar, setNotaParaDeletar] = useState(null);
+            const [modalObservacao, setModalObservacao] = useState(null); // Justificativa de pendência
             
-            // Novos estados para a seleção e envio de e-mail
+            // Seleção e E-mail
             const [notasSelecionadas, setNotasSelecionadas] = useState([]);
-            const [modalEmailHtml, setModalEmailHtml] = useState(null);
+            const [modalEmailData, setModalEmailData] = useState(null);
             const [copiado, setCopiado] = useState(false);
             const [modoSelecao, setModoSelecao] = useState(false);
+            const [incluirObsEmail, setIncluirObsEmail] = useState(false);
+
+            // Sistema de Notificações Toast
+            const [toast, setToast] = useState(null);
+            const showToast = (mensagem, tipo = 'info') => {
+                setToast({ mensagem, tipo });
+                setTimeout(() => setToast(null), 3500);
+            };
 
             useEffect(() => {
                 const notasRef = ref(db, 'notasFiscais');
                 const unsubscribe = onValue(notasRef, (snapshot) => {
                     const data = snapshot.val();
-                    const notasArray = data ? Object.keys(data).map(key => ({ id: key, classificacao: 'padrao', ...data[key] })) : [];
+                    const notasArray = data ? Object.keys(data).map(key => ({ 
+                        id: key, 
+                        classificacao: 'padrao',
+                        observacao: '',
+                        ...data[key] 
+                    })) : [];
                     notasArray.sort((a, b) => new Date(b.dataUpload || 0) - new Date(a.dataUpload || 0));
                     setNotas(notasArray);
                     setCarregando(false);
                     setErroConexao(false);
                 }, (err) => {
+                    console.error("Falha ao sincronizar com banco:", err);
                     setErroConexao(true);
                     setCarregando(false);
+                    showToast("Erro na conexão com a base de dados.", "error");
                 });
                 return () => unsubscribe();
             }, []);
@@ -222,38 +307,71 @@
 
                     await set(ref(db, 'notasFiscais/' + id), dadosLista);
                     if (base64) await set(ref(db, 'arquivos/' + id), base64);
+                    
+                    showToast(`Nota Fiscal #${novaNota.numero || 'sem número'} cadastrada com sucesso!`, 'success');
                     setActiveTab('historico');
-                } catch (e) { alert("Erro de sincronização com a base de dados."); }
+                } catch (e) {
+                    showToast("Erro de sincronização ao salvar documento.", "error");
+                }
             };
 
             const salvarEdicao = async (e) => {
                 e.preventDefault();
                 try {
-                    const { id, valor, dataLancamento, numero, fornecedor, status, codigosAmostra, centroCusto } = editingNota;
+                    const { id, valor, dataLancamento, numero, fornecedor, status, codigosAmostra, centroCusto, observacao } = editingNota;
                     await update(ref(db, 'notasFiscais/' + id), { 
-                        valor, dataLancamento, numero, fornecedor, status, 
+                        valor, 
+                        dataLancamento, 
+                        numero, 
+                        fornecedor, 
+                        status, 
                         codigosAmostra: codigosAmostra || null,
-                        centroCusto: centroCusto || null
+                        centroCusto: centroCusto || null,
+                        observacao: observacao || null
                     });
                     setEditingNota(null);
-                } catch (e) { console.error("Erro ao atualizar dados."); }
+                    showToast("Dados da nota fiscal atualizados!", "success");
+                } catch (e) { 
+                    showToast("Erro ao atualizar dados.", "error");
+                }
+            };
+
+            const salvarObservacaoRapida = async (e) => {
+                e.preventDefault();
+                if (!modalObservacao) return;
+                try {
+                    await update(ref(db, 'notasFiscais/' + modalObservacao.id), {
+                        observacao: modalObservacao.textoObs || null
+                    });
+                    showToast("Observação / Justificativa gravada com sucesso!", "success");
+                    setModalObservacao(null);
+                } catch (err) {
+                    showToast("Não foi possível salvar a observação.", "error");
+                }
             };
 
             const salvarLote = async (lote) => {
                 setCarregando(true);
                 for (const n of lote) await salvarNota(n);
                 setCarregando(false);
+                showToast(`${lote.length} documento(s) importado(s) com êxito!`, 'success');
+                setActiveTab('historico');
             };
 
-            // FIX: Restauração da função de deletar nota
             const deletarNota = (nota) => {
                 setNotaParaDeletar(nota);
             };
 
             const confirmarDeletar = async (id) => {
-                await remove(ref(db, 'notasFiscais/' + id));
-                await remove(ref(db, 'arquivos/' + id));
-                setNotaParaDeletar(null);
+                try {
+                    await remove(ref(db, 'notasFiscais/' + id));
+                    await remove(ref(db, 'arquivos/' + id));
+                    setNotasSelecionadas(prev => prev.filter(nId => nId !== id));
+                    setNotaParaDeletar(null);
+                    showToast("Registo excluído permanentemente.", "info");
+                } catch (e) {
+                    showToast("Erro ao excluir registo.", "error");
+                }
             };
 
             const alternarStatus = async (nota) => {
@@ -271,6 +389,7 @@
                         tempCentroCusto: nota.centroCusto || ''
                     });
                 }
+                showToast(`Status atualizado para: ${getStatusConfig(novoStatus).label}`, 'info');
             };
 
             const salvarDetalhesAmostra = async (e) => {
@@ -281,13 +400,15 @@
                         centroCusto: modalAmostra.tempCentroCusto
                     });
                     setModalAmostra(null);
+                    showToast("Dados da amostra guardados!", "success");
                 } catch (error) {
-                    console.error("Erro ao salvar detalhes da amostra.");
+                    showToast("Erro ao gravar detalhes da amostra.", "error");
                 }
             };
 
             const marcarLancada = async (id) => {
                 await update(ref(db, 'notasFiscais/' + id), { status: 'lancada' });
+                showToast("Nota marcada como lançada!", "success");
             };
 
             const atualizarClassificacao = async (id, novaClassificacao) => {
@@ -301,13 +422,15 @@
                     if (snap.exists()) {
                         setPreviewNota({ ...nota, arquivoDataUrl: snap.val(), carregandoAnexo: false });
                     } else {
-                        alert("Arquivo indisponível. Talvez esta nota tenha sido lançada sem anexo.");
+                        showToast("Arquivo PDF/XML não localizado no armazenamento.", "error");
                         setPreviewNota(null);
                     }
-                } catch (e) { setPreviewNota(null); }
+                } catch (e) { 
+                    showToast("Falha ao abrir visualização do arquivo.", "error");
+                    setPreviewNota(null); 
+                }
             };
 
-            // Novas funções para seleção e geração do E-mail
             const handleSelectNota = (id) => {
                 setNotasSelecionadas(prev => prev.includes(id) ? prev.filter(nId => nId !== id) : [...prev, id]);
             };
@@ -327,6 +450,7 @@
                 setModoSelecao(!modoSelecao);
             };
 
+            // Geração de e-mail com concordância gramatical precisa (singular / plural)
             const abrirModalEmail = () => {
                 const hora = new Date().getHours();
                 let saudacao = 'Bom dia';
@@ -334,105 +458,137 @@
                 else if (hora >= 18) saudacao = 'Boa noite';
 
                 const notasEmail = notasSelecionadas.map(id => notas.find(n => n.id === id)).filter(Boolean);
+                if (notasEmail.length === 0) return;
 
-                // Verifica se há alguma nota classificada como amostra ou se tem código AM
+                const isSingular = notasEmail.length === 1;
                 const containsAmostras = notasEmail.some(n => n.status === 'aguardando_amostra' || n.codigosAmostra);
 
-                let html = '';
+                let fraseAbertura = '';
+                let assuntoSugerido = '';
 
                 if (containsAmostras) {
-                    // EMAIL TIPO 1: AMOSTRAS E CENTROS DE CUSTO
-                    html = `
-                        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
-                            <p style="margin-bottom: 16px;">Olá, ${saudacao.toLowerCase()}.</p>
-                            <p style="margin-bottom: 24px;">Seguem os dados para classificação das notas e seus respectivos centros de custo:</p>
-                            
-                            <table style="border-collapse: collapse; width: 100%; max-width: 650px; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                <thead>
-                                    <tr style="background-color: #1e40af; color: #ffffff;">
-                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Nota / Fatura</th>
-                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 50%;">Código(s) AM</th>
-                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Centro de Custo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                    if (isSingular) {
+                        fraseAbertura = `Segue o dado para classificação da nota fiscal e seu respectivo centro de custo:`;
+                        assuntoSugerido = `Classificação de Amostra - NF #${notasEmail[0].numero}`;
+                    } else {
+                        fraseAbertura = `Seguem os dados para classificação das notas e seus respectivos centros de custo:`;
+                        assuntoSugerido = `Classificação de Amostras - (${notasEmail.length} Notas)`;
+                    }
+                } else {
+                    if (isSingular) {
+                        fraseAbertura = `O número da nota fiscal e o nome do fornecedor segue abaixo para classificação (arquivo em anexo):`;
+                        assuntoSugerido = `Classificação de Nota Fiscal - NF #${notasEmail[0].numero}`;
+                    } else {
+                        fraseAbertura = `Os números das notas e os nomes dos fornecedores seguem abaixo para classificação (arquivos em anexo):`;
+                        assuntoSugerido = `Classificação de Notas Fiscais - (${notasEmail.length} Faturas)`;
+                    }
+                }
+
+                let tabelaHtml = '';
+                if (containsAmostras) {
+                    tabelaHtml = `
+                        <table style="border-collapse: collapse; width: 100%; max-width: 680px; margin: 18px 0; font-size: 13px; font-family: Arial, sans-serif; border: 1px solid #cbd5e1;">
+                            <thead>
+                                <tr style="background-color: #1e3a8a; color: #ffffff;">
+                                    <th style="padding: 10px 14px; text-align: center; border: 1px solid #1e3a8a; width: 25%;">Nota / Fatura</th>
+                                    <th style="padding: 10px 14px; text-align: center; border: 1px solid #1e3a8a; width: 45%;">Código(s) AM</th>
+                                    <th style="padding: 10px 14px; text-align: center; border: 1px solid #1e3a8a; width: 30%;">Centro de Custo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                     `;
 
-                    notasEmail.forEach((n, index) => {
+                    notasEmail.forEach((n, idx) => {
                         let amostra = n.codigosAmostra || '-';
                         let cc = n.centroCusto || '-';
-                        
                         if (amostra.toUpperCase().includes('AM1484') && cc.includes('2232')) {
-                            amostra += ' <em>(Análise laboratorial)</em>';
+                            amostra += ' <span style="color:#64748b; font-style:italic;">(Análise laboratorial)</span>';
                         }
-                        
-                        const bgRow = index % 2 === 0 ? '#ffffff' : '#f0f9ff';
-                        
-                        html += `
-                                    <tr style="background-color: ${bgRow};">
-                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a;"><strong>${n.numero}</strong></td>
-                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">${amostra}</td>
-                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">${cc}</td>
-                                    </tr>
+                        const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                        tabelaHtml += `
+                            <tr style="background-color: ${bg};">
+                                <td style="padding: 9px 14px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a; font-weight: bold;">${n.numero}</td>
+                                <td style="padding: 9px 14px; text-align: center; border: 1px solid #cbd5e1; color: #1e40af;">${amostra}</td>
+                                <td style="padding: 9px 14px; text-align: center; border: 1px solid #cbd5e1; color: #1e40af;">${cc}</td>
+                            </tr>
                         `;
+                        if (incluirObsEmail && n.observacao) {
+                            tabelaHtml += `
+                                <tr style="background-color: #fffbeb;">
+                                    <td colspan="3" style="padding: 6px 14px; font-size: 12px; color: #92400e; border: 1px solid #cbd5e1; text-align: left;">
+                                        <strong>Obs/Motivo:</strong> ${n.observacao}
+                                    </td>
+                                </tr>
+                            `;
+                        }
                     });
-
-                    html += `
-                                </tbody>
-                            </table>
-                            <p style="margin-top: 24px;">Atenciosamente,</p>
-                        </div>
-                    `;
-
+                    tabelaHtml += `</tbody></table>`;
                 } else {
-                    // EMAIL TIPO 2: NOTAS NORMAIS (CLASSIFICAÇÃO)
-                    html = `
-                        <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
-                            <p style="margin-bottom: 16px;">Olá, ${saudacao.toLowerCase()}.</p>
-                            <p style="margin-bottom: 24px;">Os números das notas e os nomes dos fornecedores seguem abaixo para classificação (arquivos em anexo):</p>
-                            
-                            <table style="border-collapse: collapse; width: 100%; max-width: 650px; margin: 20px 0; font-size: 13px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                <thead>
-                                    <tr style="background-color: #1e40af; color: #ffffff;">
-                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Nota / Fatura</th>
-                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 50%;">Fornecedor</th>
-                                        <th style="padding: 12px 15px; text-align: center; font-weight: bold; border: 1px solid #1e40af; width: 25%;">Valor Bruto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                    tabelaHtml = `
+                        <table style="border-collapse: collapse; width: 100%; max-width: 680px; margin: 18px 0; font-size: 13px; font-family: Arial, sans-serif; border: 1px solid #cbd5e1;">
+                            <thead>
+                                <tr style="background-color: #1e3a8a; color: #ffffff;">
+                                    <th style="padding: 10px 14px; text-align: center; border: 1px solid #1e3a8a; width: 22%;">Nota / Fatura</th>
+                                    <th style="padding: 10px 14px; text-align: center; border: 1px solid #1e3a8a; width: 50%;">Fornecedor</th>
+                                    <th style="padding: 10px 14px; text-align: center; border: 1px solid #1e3a8a; width: 28%;">Valor Bruto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                     `;
 
-                    notasEmail.forEach((n, index) => {
-                        const bgRow = index % 2 === 0 ? '#ffffff' : '#f0f9ff';
-                        const valorFormatado = parseFloat(n.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-                        
-                        html += `
-                                    <tr style="background-color: ${bgRow};">
-                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a;"><strong>${n.numero}</strong></td>
-                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">${n.fornecedor || '---'}</td>
-                                        <td style="padding: 10px 15px; text-align: center; border: 1px solid #cbd5e1; color: #1e3a8a;">R$ ${valorFormatado}</td>
-                                    </tr>
+                    notasEmail.forEach((n, idx) => {
+                        const bg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                        tabelaHtml += `
+                            <tr style="background-color: ${bg};">
+                                <td style="padding: 9px 14px; text-align: center; border: 1px solid #cbd5e1; color: #0f172a; font-weight: bold;">${n.numero}</td>
+                                <td style="padding: 9px 14px; text-align: center; border: 1px solid #cbd5e1; color: #1e40af;">${n.fornecedor || '---'}</td>
+                                <td style="padding: 9px 14px; text-align: center; border: 1px solid #cbd5e1; color: #1e40af; font-weight: bold;">R$ ${formatMoeda(n.valor)}</td>
+                            </tr>
                         `;
+                        if (incluirObsEmail && n.observacao) {
+                            tabelaHtml += `
+                                <tr style="background-color: #fffbeb;">
+                                    <td colspan="3" style="padding: 6px 14px; font-size: 12px; color: #92400e; border: 1px solid #cbd5e1; text-align: left;">
+                                        <strong>Obs/Motivo:</strong> ${n.observacao}
+                                    </td>
+                                </tr>
+                            `;
+                        }
                     });
-
-                    html += `
-                                </tbody>
-                            </table>
-                            <p style="margin-top: 24px;">Atenciosamente,</p>
-                        </div>
-                    `;
+                    tabelaHtml += `</tbody></table>`;
                 }
-                
-                setModalEmailHtml(html);
+
+                const emailCompleto = `
+                    <div style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #1e293b; line-height: 1.6;">
+                        <p style="margin-bottom: 12px;">Olá, ${saudacao.toLowerCase()}.</p>
+                        <p style="margin-bottom: 16px;">${fraseAbertura}</p>
+                        ${tabelaHtml}
+                        <p style="margin-top: 20px; color: #475569;">Atenciosamente,</p>
+                    </div>
+                `;
+
+                setModalEmailData({
+                    html: emailCompleto,
+                    assunto: assuntoSugerido,
+                    isSingular,
+                    quantidade: notasEmail.length
+                });
                 setCopiado(false);
             };
 
+            useEffect(() => {
+                if (modalEmailData !== null) {
+                    abrirModalEmail();
+                }
+            }, [incluirObsEmail]);
+
             const copiarParaClipboard = () => {
+                if (!modalEmailData?.html) return;
                 const container = document.createElement('div');
-                container.innerHTML = modalEmailHtml;
+                container.innerHTML = modalEmailData.html;
                 container.style.position = 'fixed';
                 container.style.pointerEvents = 'none';
-                container.style.opacity = 0;
+                container.style.opacity = '0';
                 document.body.appendChild(container);
 
                 const range = document.createRange();
@@ -444,54 +600,91 @@
                 try {
                     document.execCommand('copy');
                     setCopiado(true);
-                    setTimeout(() => setCopiado(false), 2000);
+                    showToast("Texto e tabela copiados com formatação rica!", "success");
+                    setTimeout(() => setCopiado(false), 2500);
                 } catch (err) {
                     console.error('Falha ao copiar:', err);
+                    showToast("Não foi possível copiar automaticamente.", "error");
                 }
 
                 selection.removeAllRanges();
                 document.body.removeChild(container);
             };
 
-            // Processamento de Filtros e Agrupamento
-            const notasFiltradas = notas.filter(n => {
-                const matchBusca = n.numero?.includes(searchTerm) || (n.fornecedor && n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase()));
-                const matchStatus = filtroStatus === 'todos' || n.status === filtroStatus;
-                const matchClass = filtroClassificacao === 'todas' || (n.classificacao || 'padrao') === filtroClassificacao;
-                const mesNota = n.dataLancamento ? n.dataLancamento.split('-')[1] : null;
-                const matchMes = filtroMes === 'todos' || mesNota === filtroMes;
-                return matchBusca && matchStatus && matchMes && matchClass;
-            });
+            const notasFiltradas = useMemo(() => {
+                return notas.filter(n => {
+                    const matchBusca = (n.numero && n.numero.toLowerCase().includes(searchTerm.toLowerCase())) || 
+                                       (n.fornecedor && n.fornecedor.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                       (n.observacao && n.observacao.toLowerCase().includes(searchTerm.toLowerCase()));
+                    
+                    const matchStatus = filtroStatus === 'todos' || n.status === filtroStatus;
+                    const matchClass = filtroClassificacao === 'todas' || (n.classificacao || 'padrao') === filtroClassificacao;
+                    
+                    let matchJust = true;
+                    if (filtroJustificativa === 'com_obs') {
+                        matchJust = !!n.observacao && n.observacao.trim() !== '';
+                    } else if (filtroJustificativa === 'sem_obs') {
+                        matchJust = !n.observacao || n.observacao.trim() === '';
+                    }
 
-            const notasAgrupadas = notasFiltradas.reduce((acc, nota) => {
-                const data = nota.dataLancamento || 'Sem Data';
-                if (!acc[data]) acc[data] = [];
-                acc[data].push(nota);
-                return acc;
-            }, {});
+                    return matchBusca && matchStatus && matchClass && matchJust;
+                });
+            }, [notas, searchTerm, filtroStatus, filtroClassificacao, filtroJustificativa]);
+
+            const notasAgrupadas = useMemo(() => {
+                return notasFiltradas.reduce((acc, nota) => {
+                    const data = nota.dataLancamento || 'Sem Data';
+                    if (!acc[data]) acc[data] = [];
+                    acc[data].push(nota);
+                    return acc;
+                }, {});
+            }, [notasFiltradas]);
             
-            const datasOrdenadas = Object.keys(notasAgrupadas).sort((a, b) => new Date(b) - new Date(a));
+            const datasOrdenadas = useMemo(() => {
+                return Object.keys(notasAgrupadas).sort((a, b) => new Date(b) - new Date(a));
+            }, [notasAgrupadas]);
 
-            const totalGeral = notas.reduce((acc, n) => acc + parseFloat(n.valor || 0), 0);
-            const pendentes = notas.filter(n => n.status !== 'lancada').length;
+            const metricas = useMemo(() => {
+                const totalGeral = notas.reduce((acc, n) => acc + (parseFloat(n.valor) || 0), 0);
+                const lancadas = notas.filter(n => n.status === 'lancada').length;
+                const pendentes = notas.filter(n => n.status === 'pendente').length;
+                const amostras = notas.filter(n => n.status === 'aguardando_amostra').length;
+                const pendentesTotal = pendentes + amostras;
+                const pendentesComJustificativa = notas.filter(n => n.status !== 'lancada' && n.observacao && n.observacao.trim() !== '').length;
+                return { totalGeral, lancadas, pendentes, amostras, pendentesTotal, pendentesComJustificativa };
+            }, [notas]);
 
             return (
-                <div className="flex h-screen bg-slate-100 overflow-hidden text-slate-800">
+                <div className="flex h-screen bg-[#f8fafc] overflow-hidden text-slate-800">
                     
+                    {/* NOTIFICAÇÃO TOAST FLUTUANTE */}
+                    {toast && (
+                        <div className="fixed bottom-6 right-6 z-[200] animate-scale-in flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border bg-slate-900 text-white border-slate-700 text-sm font-medium">
+                            {toast.tipo === 'success' && <CheckCircle2 size={18} className="text-emerald-400 shrink-0"/>}
+                            {toast.tipo === 'error' && <AlertCircle size={18} className="text-rose-400 shrink-0"/>}
+                            {toast.tipo === 'info' && <ShieldCheck size={18} className="text-blue-400 shrink-0"/>}
+                            <span>{toast.mensagem}</span>
+                        </div>
+                    )}
+
                     {/* MODAL DE DELEÇÃO */}
                     {notaParaDeletar && (
-                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+                        <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
                                 <div className="p-6 text-center space-y-4">
-                                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                                        <Trash2 size={28} strokeWidth={2}/>
+                                    <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto border border-rose-100 shadow-sm">
+                                        <Trash2 size={24} strokeWidth={2}/>
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-800">Excluir Registo?</h3>
-                                    <p className="text-sm text-slate-500">Tem certeza que pretende excluir permanentemente a fatura <strong className="text-slate-800">#{notaParaDeletar.numero}</strong>?</p>
+                                    <h3 className="text-lg font-bold text-slate-800">Excluir Registo?</h3>
+                                    <p className="text-xs text-slate-500 leading-relaxed">
+                                        Tem certeza que deseja excluir a fatura <strong className="text-slate-800">#{notaParaDeletar.numero}</strong>? Essa operação apagará dados e anexo.
+                                    </p>
                                 </div>
-                                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-center">
-                                    <button type="button" onClick={() => setNotaParaDeletar(null)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors w-full">Cancelar</button>
-                                    <button type="button" onClick={() => confirmarDeletar(notaParaDeletar.id)} className="px-5 py-2.5 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-sm transition-colors w-full">
+                                <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2.5 justify-center">
+                                    <button type="button" onClick={() => setNotaParaDeletar(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200/80 bg-slate-200/50 rounded-xl transition-colors w-full">
+                                        Cancelar
+                                    </button>
+                                    <button type="button" onClick={() => confirmarDeletar(notaParaDeletar.id)} className="px-4 py-2 text-xs font-semibold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-sm transition-colors w-full">
                                         Sim, Excluir
                                     </button>
                                 </div>
@@ -499,85 +692,211 @@
                         </div>
                     )}
 
-                    {/* MODAL CÓDIGO DA AMOSTRA & CENTRO DE CUSTO */}
-                    {modalAmostra && (
-                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
-                            <form onSubmit={salvarDetalhesAmostra} className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
+                    {/* MODAL DE OBSERVAÇÃO / JUSTIFICATIVA DE NOTAS NÃO LANÇADAS */}
+                    {modalObservacao && (
+                        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
+                            <form onSubmit={salvarObservacaoRapida} className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
                                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                        <Package size={18} className="text-purple-600"/> Detalhes da Amostra
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                        <MessageSquare size={17} className="text-amber-600"/> Justificativa de Pendência
                                     </h3>
-                                    <button type="button" onClick={() => setModalAmostra(null)} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors"><X size={18}/></button>
+                                    <button type="button" onClick={() => setModalObservacao(null)} className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors">
+                                        <X size={18}/>
+                                    </button>
                                 </div>
-                                <div className="p-6 space-y-5">
-                                    <p className="text-sm text-slate-500">Insira os dados adicionais para a Fatura <strong className="text-slate-800">#{modalAmostra.numero}</strong>.</p>
-                                    
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="label-premium"><Tag size={14}/> Código(s) AM</label>
-                                            <input required autoFocus className="input-premium border-purple-200 focus:border-purple-500 focus:ring-purple-500/20" placeholder="Ex: AM123, AM456" value={modalAmostra.tempCode} onChange={e => setModalAmostra({...modalAmostra, tempCode: e.target.value})} />
-                                        </div>
-                                        <div>
-                                            <label className="label-premium"><Building2 size={14}/> Centro de Custo</label>
-                                            <input className="input-premium border-purple-200 focus:border-purple-500 focus:ring-purple-500/20" placeholder="Ex: 102030, Marketing, Comercial" value={modalAmostra.tempCentroCusto} onChange={e => setModalAmostra({...modalAmostra, tempCentroCusto: e.target.value})} />
-                                        </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl flex items-start gap-2.5">
+                                        <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-amber-900 leading-relaxed">
+                                            Fatura <strong>#{modalObservacao.numero || '---'}</strong> ({modalObservacao.fornecedor || 'Sem Fornecedor'}).<br/>
+                                            Descreva o motivo pelo qual a nota ainda não foi lançada no sistema.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="label-premium">Motivo / Pendência Técnica</label>
+                                        <textarea
+                                            rows="4"
+                                            autoFocus
+                                            required
+                                            value={modalObservacao.textoObs || ''}
+                                            onChange={e => setModalObservacao({ ...modalObservacao, textoObs: e.target.value })}
+                                            placeholder="Ex: Aguardando aprovação de frete pela diretoria; Divergência de alíquota; Aguardando chegada física do produto no estoque..."
+                                            className="input-premium resize-none text-xs leading-relaxed"
+                                        />
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        <span className="text-[11px] font-bold text-slate-400 block w-full mb-0.5">Sugestões rápidas:</span>
+                                        {[
+                                            "Aguardando liberação de centro de custo",
+                                            "Aguardando aprovação do gestor",
+                                            "Divergência de valores de frete/impostos",
+                                            "Aguardando chegada da mercadoria física"
+                                        ].map((sug, i) => (
+                                            <button
+                                                key={i}
+                                                type="button"
+                                                onClick={() => setModalObservacao({ ...modalObservacao, textoObs: sug })}
+                                                className="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-md transition-colors font-medium border border-slate-200/60"
+                                            >
+                                                + {sug}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="p-5 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end">
-                                    <button type="button" onClick={() => setModalAmostra(null)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Mais tarde</button>
-                                    <button type="submit" className="px-5 py-2.5 text-sm font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm transition-colors flex items-center gap-2">
-                                        <Save size={16}/> Salvar Detalhes
+                                <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2.5 justify-end">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            setModalObservacao({ ...modalObservacao, textoObs: '' });
+                                        }} 
+                                        className="px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors mr-auto"
+                                    >
+                                        Limpar Motivo
+                                    </button>
+                                    <button type="button" onClick={() => setModalObservacao(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-xl transition-colors">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="px-4 py-2 text-xs font-semibold bg-amber-600 text-white rounded-xl hover:bg-amber-700 shadow-sm transition-colors flex items-center gap-1.5">
+                                        <Save size={14}/> Salvar Justificativa
                                     </button>
                                 </div>
                             </form>
                         </div>
                     )}
 
-                    {/* MODAL GERADOR DE EMAIL (COM TABELA HTML) */}
-                    {modalEmailHtml !== null && (
-                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
+                    {/* MODAL CÓDIGO DA AMOSTRA & CENTRO DE CUSTO */}
+                    {modalAmostra && (
+                        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
+                            <form onSubmit={salvarDetalhesAmostra} className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
+                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                                        <Package size={17} className="text-purple-600"/> Detalhes de Amostra Técnica
+                                    </h3>
+                                    <button type="button" onClick={() => setModalAmostra(null)} className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors">
+                                        <X size={18}/>
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <p className="text-xs text-slate-500">
+                                        Associe os códigos internos para a Fatura <strong className="text-slate-800">#{modalAmostra.numero}</strong>.
+                                    </p>
+                                    
+                                    <div className="space-y-3.5">
+                                        <div>
+                                            <label className="label-premium"><Tag size={13}/> Código(s) AM</label>
+                                            <input 
+                                                required 
+                                                autoFocus 
+                                                className="input-premium border-purple-200 focus:border-purple-500" 
+                                                placeholder="Ex: AM123, AM456" 
+                                                value={modalAmostra.tempCode} 
+                                                onChange={e => setModalAmostra({...modalAmostra, tempCode: e.target.value})} 
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="label-premium"><Building2 size={13}/> Centro de Custo</label>
+                                            <input 
+                                                className="input-premium border-purple-200 focus:border-purple-500" 
+                                                placeholder="Ex: 2232, Laboratório, Qualidade" 
+                                                value={modalAmostra.tempCentroCusto} 
+                                                onChange={e => setModalAmostra({...modalAmostra, tempCentroCusto: e.target.value})} 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2.5 justify-end">
+                                    <button type="button" onClick={() => setModalAmostra(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-xl transition-colors">
+                                        Fechar
+                                    </button>
+                                    <button type="submit" className="px-4 py-2 text-xs font-semibold bg-purple-600 text-white rounded-xl hover:bg-purple-700 shadow-sm transition-colors flex items-center gap-1.5">
+                                        <Save size={14}/> Salvar Dados
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
+                    {}
+                    {modalEmailData !== null && (
+                        <div className="fixed inset-0 z-[130] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
                             <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden border border-slate-200 animate-scale-in flex flex-col max-h-[90vh]">
                                 <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                                        <Mail size={18} className="text-purple-600"/> Pré-visualização do E-mail
-                                    </h3>
-                                    <button type="button" onClick={() => setModalEmailHtml(null)} className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors"><X size={18}/></button>
-                                </div>
-                                <div className="p-6 flex-1 overflow-y-auto bg-slate-100/50">
-                                    <p className="text-sm text-slate-500 mb-4 font-medium">Esta é a visão de como a tabela ficará no corpo do seu e-mail (Outlook/Gmail). Clique no botão abaixo para copiar.</p>
-                                    
-                                    {/* Preview container (Renderiza o HTML real na tela) */}
-                                    <div className="bg-white p-6 md:p-8 rounded-xl border border-slate-200 shadow-sm overflow-x-auto" 
-                                         dangerouslySetInnerHTML={{ __html: modalEmailHtml }}>
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-2 bg-purple-100 text-purple-700 rounded-lg">
+                                            <Mail size={18}/>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 text-sm">
+                                                Prévia de E-mail de Classificação
+                                            </h3>
+                                            <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200/60 inline-block mt-0.5">
+                                                {modalEmailData.isSingular ? 'Modo Singular (1 nota)' : `Modo Plural (${modalEmailData.quantidade} notas)`}
+                                            </span>
+                                        </div>
                                     </div>
-                                    
+                                    <button type="button" onClick={() => setModalEmailData(null)} className="p-1 hover:bg-slate-200 rounded-lg text-slate-400 transition-colors">
+                                        <X size={18}/>
+                                    </button>
                                 </div>
-                                <div className="p-5 bg-white border-t border-slate-100 flex gap-3 justify-end rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
-                                    <button type="button" onClick={() => setModalEmailHtml(null)} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Fechar</button>
-                                    <button type="button" onClick={copiarParaClipboard} className={`px-6 py-2.5 text-sm font-bold text-white rounded-lg shadow-sm transition-colors flex items-center gap-2 ${copiado ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-purple-600 hover:bg-purple-700'}`}>
-                                        {copiado ? <Check size={18}/> : <Copy size={18}/>}
-                                        {copiado ? 'Tabela Copiada!' : 'Copiar para o E-mail'}
+
+                                <div className="p-5 flex-1 overflow-y-auto bg-slate-50/60 space-y-4">
+                                    <div className="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                        <div>
+                                            <span className="font-bold text-slate-500 uppercase tracking-wider block text-[10px]">Sugestão de Assunto:</span>
+                                            <span className="font-mono text-slate-800 font-semibold">{modalEmailData.assunto}</span>
+                                        </div>
+                                        <label className="flex items-center gap-2 cursor-pointer select-none bg-amber-50 text-amber-800 px-3 py-1.5 rounded-lg border border-amber-200 font-semibold">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={incluirObsEmail} 
+                                                onChange={e => setIncluirObsEmail(e.target.checked)} 
+                                                className="w-3.5 h-3.5 text-amber-600 rounded"
+                                            />
+                                            Incluir Justificativas / Observações
+                                        </label>
+                                    </div>
+
+                                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-x-auto" 
+                                         dangerouslySetInnerHTML={{ __html: modalEmailData.html }}>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-white border-t border-slate-100 flex gap-2.5 justify-end">
+                                    <button type="button" onClick={() => setModalEmailData(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                                        Fechar
+                                    </button>
+                                    <button 
+                                        type="button" 
+                                        onClick={copiarParaClipboard} 
+                                        className={`px-5 py-2 text-xs font-bold text-white rounded-xl shadow-sm transition-all flex items-center gap-1.5 ${copiado ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-purple-600 hover:bg-purple-700'}`}
+                                    >
+                                        {copiado ? <Check size={15}/> : <Copy size={15}/>}
+                                        {copiado ? 'Copiado para o E-mail!' : 'Copiar Texto Formatado'}
                                     </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* MODAL DE EDIÇÃO */}
+                    {/* MODAL DE EDIÇÃO COMPLETA */}
                     {editingNota && (
-                        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-fade-in">
-                            <form onSubmit={salvarEdicao} className="glass-modal rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
-                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/50">
-                                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-lg">
-                                        <Pencil size={20} className="text-blue-600"/> Editar Registo
+                        <div className="fixed inset-0 z-[125] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-fade-in">
+                            <form onSubmit={salvarEdicao} className="glass-panel rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
+                                <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-white/70">
+                                    <h3 className="font-bold text-slate-800 flex items-center gap-2 text-base">
+                                        <Pencil size={18} className="text-blue-600"/> Editar Registro Fiscal
                                     </h3>
-                                    <button type="button" onClick={() => setEditingNota(null)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors"><X size={20}/></button>
+                                    <button type="button" onClick={() => setEditingNota(null)} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+                                        <X size={18}/>
+                                    </button>
                                 </div>
-                                <div className="p-6 sm:p-8 space-y-6">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label className="label-premium">Nº Nota Fiscal</label>
-                                            <input required className="input-premium" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
+                                            <input required className="input-premium font-mono-numbers" value={editingNota.numero} onChange={e => setEditingNota({...editingNota, numero: e.target.value})} />
                                         </div>
                                         <div>
                                             <label className="label-premium">Data Lançamento</label>
@@ -589,38 +908,55 @@
                                         </div>
                                         <div>
                                             <label className="label-premium">Valor Bruto (R$)</label>
-                                            <input type="number" step="0.01" required className="input-premium" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
+                                            <input type="number" step="0.01" required className="input-premium font-mono-numbers" value={editingNota.valor} onChange={e => setEditingNota({...editingNota, valor: e.target.value})} />
                                         </div>
                                         <div>
                                             <label className="label-premium">Status</label>
                                             <div className="relative">
-                                                <select className="input-premium cursor-pointer appearance-none pr-10" value={editingNota.status} onChange={e => setEditingNota({...editingNota, status: e.target.value})}>
+                                                <select className="input-premium cursor-pointer appearance-none pr-8 font-semibold" value={editingNota.status} onChange={e => setEditingNota({...editingNota, status: e.target.value})}>
                                                     <option value="pendente">Pendente</option>
                                                     <option value="aguardando_amostra">Aguard. Amostra</option>
                                                     <option value="lancada">Lançada</option>
                                                 </select>
-                                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
                                             </div>
                                         </div>
 
+                                        {editingNota.status !== 'lancada' && (
+                                            <div className="sm:col-span-2 bg-amber-50/70 p-4 rounded-xl border border-amber-200">
+                                                <label className="label-premium text-amber-800 flex items-center gap-1.5">
+                                                    <MessageSquare size={13}/> Justificativa / Observação do Atraso
+                                                </label>
+                                                <textarea 
+                                                    rows="2" 
+                                                    className="input-premium border-amber-200 focus:border-amber-500 text-xs bg-white" 
+                                                    placeholder="Descreva o motivo de ainda não ter sido lançada..." 
+                                                    value={editingNota.observacao || ''} 
+                                                    onChange={e => setEditingNota({...editingNota, observacao: e.target.value})} 
+                                                />
+                                            </div>
+                                        )}
+
                                         {editingNota.status === 'aguardando_amostra' && (
-                                            <div className="sm:col-span-2 bg-purple-50/50 p-5 rounded-xl border border-purple-100 grid grid-cols-1 sm:grid-cols-2 gap-5 mt-2 animate-fade-in">
+                                            <div className="sm:col-span-2 bg-purple-50/70 p-4 rounded-xl border border-purple-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="label-premium text-purple-700"><Package size={14}/> Códigos da Amostra (AM)</label>
-                                                    <input className="input-premium border-purple-200 focus:border-purple-500" placeholder="Ex: AM123, AM456" value={editingNota.codigosAmostra || ''} onChange={e => setEditingNota({...editingNota, codigosAmostra: e.target.value})} />
+                                                    <label className="label-premium text-purple-700"><Tag size={13}/> Códigos da Amostra (AM)</label>
+                                                    <input className="input-premium border-purple-200 focus:border-purple-500 text-xs" placeholder="Ex: AM123, AM456" value={editingNota.codigosAmostra || ''} onChange={e => setEditingNota({...editingNota, codigosAmostra: e.target.value})} />
                                                 </div>
                                                 <div>
-                                                    <label className="label-premium text-purple-700"><Building2 size={14}/> Centro de Custo</label>
-                                                    <input className="input-premium border-purple-200 focus:border-purple-500" placeholder="Ex: Marketing" value={editingNota.centroCusto || ''} onChange={e => setEditingNota({...editingNota, centroCusto: e.target.value})} />
+                                                    <label className="label-premium text-purple-700"><Building2 size={13}/> Centro de Custo</label>
+                                                    <input className="input-premium border-purple-200 focus:border-purple-500 text-xs" placeholder="Ex: 2232, Marketing" value={editingNota.centroCusto || ''} onChange={e => setEditingNota({...editingNota, centroCusto: e.target.value})} />
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-                                <div className="p-5 sm:px-8 bg-slate-50 border-t border-slate-100 flex gap-3 justify-end rounded-b-2xl">
-                                    <button type="button" onClick={() => setEditingNota(null)} className="px-6 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-lg transition-colors">Cancelar</button>
-                                    <button type="submit" className="px-6 py-2.5 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-2">
-                                        <Save size={16}/> Gravar Alterações
+                                <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2.5 justify-end">
+                                    <button type="button" onClick={() => setEditingNota(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 bg-slate-100 rounded-xl transition-colors">
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-1.5">
+                                        <Save size={14}/> Gravar Alterações
                                     </button>
                                 </div>
                             </form>
@@ -629,59 +965,64 @@
 
                     {/* MODAL DE VISUALIZAÇÃO PDF */}
                     {previewNota && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-8 animate-fade-in">
-                            <div className="bg-white rounded-2xl w-full max-w-5xl h-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
-                                <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-2.5 bg-blue-100 text-blue-600 rounded-xl"><FileText size={22}/></div>
+                        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:p-6 animate-fade-in">
+                            <div className="bg-white rounded-2xl w-full max-w-5xl h-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200 animate-scale-in">
+                                <div className="flex justify-between items-center px-6 py-3.5 border-b border-slate-100 bg-slate-50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-blue-100 text-blue-600 rounded-xl"><FileText size={20}/></div>
                                         <div>
-                                            <h3 className="text-base font-bold text-slate-800">{previewNota.arquivoNome}</h3>
-                                            <p className="text-xs text-slate-500 mt-0.5 font-medium">Lançamento: {formatData(previewNota.dataLancamento)} &bull; Doc Nº {previewNota.numero}</p>
+                                            <h3 className="text-sm font-bold text-slate-800 truncate max-w-md">{previewNota.arquivoNome || 'Documento Fiscal'}</h3>
+                                            <p className="text-[11px] text-slate-500 font-medium">Lançamento: {formatData(previewNota.dataLancamento)} &bull; Doc Nº {previewNota.numero}</p>
                                         </div>
                                     </div>
-                                    <button onClick={() => setPreviewNota(null)} className="p-2 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-xl transition-all"><X size={24}/></button>
+                                    <button onClick={() => setPreviewNota(null)} className="p-1.5 hover:bg-slate-200 text-slate-500 rounded-lg transition-colors"><X size={20}/></button>
                                 </div>
-                                <div className="flex-1 bg-slate-200 p-4 sm:p-6 overflow-hidden flex items-center justify-center">
+                                <div className="flex-1 bg-slate-100 p-3 sm:p-4 overflow-hidden flex items-center justify-center">
                                     {previewNota.carregandoAnexo ? (
-                                        <div className="flex flex-col items-center gap-4">
-                                            <RefreshCw className="animate-spin text-blue-600" size={32}/>
-                                            <span className="text-sm font-semibold text-slate-600">A obter documento da Cloud...</span>
+                                        <div className="flex flex-col items-center gap-3">
+                                            <RefreshCw className="animate-spin text-blue-600" size={28}/>
+                                            <span className="text-xs font-semibold text-slate-600">Buscando documento no servidor...</span>
                                         </div>
-                                    ) : <iframe src={previewNota.arquivoDataUrl} className="w-full h-full rounded-xl border border-slate-300 bg-white shadow-sm"></iframe>}
+                                    ) : (
+                                        <iframe src={previewNota.arquivoDataUrl} className="w-full h-full rounded-xl border border-slate-300 bg-white shadow-sm"></iframe>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* SIDEBAR PROFISSIONAL */}
-                    <aside className={`bg-white border-r border-slate-200 flex flex-col transition-all duration-300 shadow-[2px_0_12px_rgba(0,0,0,0.03)] ${isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full md:translate-x-0 md:w-20'} z-50 overflow-hidden shrink-0`}>
-                        <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-100 shrink-0">
-                            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-200">
-                                <Briefcase size={18} strokeWidth={2.5}/>
+                    {}
+                    <aside className={`bg-white border-r border-slate-200 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-0 -translate-x-full md:translate-x-0 md:w-20'} z-50 overflow-hidden shrink-0 shadow-sm`}>
+                        <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-100 shrink-0">
+                            <div className="w-9 h-9 bg-gradient-to-tr from-blue-700 to-indigo-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md shadow-blue-500/20">
+                                <Briefcase size={18} strokeWidth={2.4}/>
                             </div>
-                            <span className={`font-bold text-slate-800 text-[15px] whitespace-nowrap transition-opacity duration-200 tracking-tight ${!isSidebarOpen && 'opacity-0 hidden'}`}>Doremus Notas</span>
+                            <div className={`overflow-hidden transition-all duration-200 ${!isSidebarOpen && 'opacity-0 hidden'}`}>
+                                <h1 className="font-extrabold text-slate-900 text-[15px] tracking-tight leading-none">Doremus</h1>
+                                <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">Gestão Fiscal</span>
+                            </div>
                         </div>
                         
-                        <nav className="flex-1 py-6 overflow-y-auto overflow-x-hidden space-y-1.5 px-3">
-                            <div className={`px-3 mb-3 text-[11px] uppercase tracking-wider font-bold text-slate-400 ${!isSidebarOpen && 'hidden'}`}>Visão Geral</div>
-                            <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={20}/>} label="Dashboard" expanded={isSidebarOpen} />
+                        <nav className="flex-1 py-5 overflow-y-auto space-y-1 px-3">
+                            <div className={`px-3 mb-2 text-[10px] uppercase tracking-wider font-extrabold text-slate-400 ${!isSidebarOpen && 'hidden'}`}>Visão Geral</div>
+                            <SidebarItem active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon={<LayoutDashboard size={18}/>} label="Dashboard" expanded={isSidebarOpen} />
                             
-                            <div className={`px-3 mt-8 mb-3 text-[11px] uppercase tracking-wider font-bold text-slate-400 ${!isSidebarOpen && 'hidden'}`}>Operacional</div>
-                            <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<FilePlus size={20}/>} label="Novo Registo" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={20}/>} label="Importação em Lote" expanded={isSidebarOpen} />
-                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={20}/>} label="Base de Dados" expanded={isSidebarOpen} badge={pendentes} />
+                            <div className={`px-3 mt-6 mb-2 text-[10px] uppercase tracking-wider font-extrabold text-slate-400 ${!isSidebarOpen && 'hidden'}`}>Operações</div>
+                            <SidebarItem active={activeTab === 'lancar'} onClick={() => setActiveTab('lancar')} icon={<FilePlus size={18}/>} label="Novo Registro" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'lote'} onClick={() => setActiveTab('lote')} icon={<UploadCloud size={18}/>} label="Importação Lote" expanded={isSidebarOpen} />
+                            <SidebarItem active={activeTab === 'historico'} onClick={() => setActiveTab('historico')} icon={<List size={18}/>} label="Base de Dados" expanded={isSidebarOpen} badge={metricas.pendentesTotal} />
                         </nav>
 
-                        {/* STATUS DO USUÁRIO/SISTEMA */}
-                        <div className="p-4 border-t border-slate-100 bg-slate-50/80 mt-auto">
+                        {/* Status de Conexão no Rodapé */}
+                        <div className="p-3 border-t border-slate-100 bg-slate-50/60 mt-auto">
                             <div className={`flex items-center gap-3 ${!isSidebarOpen && 'justify-center'}`}>
-                                <div className="w-10 h-10 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-blue-700 shrink-0 shadow-sm">
-                                    <User size={18} />
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs shrink-0">
+                                    <User size={15} />
                                 </div>
-                                <div className={`flex flex-col overflow-hidden ${!isSidebarOpen && 'hidden'}`}>
-                                    <span className="text-sm font-bold text-slate-800 truncate">Administrador</span>
-                                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5 mt-0.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981]"></span> Online
+                                <div className={`flex flex-col overflow-hidden text-xs ${!isSidebarOpen && 'hidden'}`}>
+                                    <span className="font-bold text-slate-800 truncate">Operador Fiscal</span>
+                                    <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sistema Ativo
                                     </span>
                                 </div>
                             </div>
@@ -690,196 +1031,273 @@
 
                     {/* CONTEÚDO PRINCIPAL */}
                     <div className="flex-1 flex flex-col h-full relative overflow-hidden min-w-0">
-                        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 px-6 flex items-center justify-between shrink-0 z-40 sticky top-0">
-                            <div className="flex items-center gap-4">
-                                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent">
-                                    <Menu size={20}/>
+                        {/* HEADER SUPERIOR */}
+                        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 h-16 px-6 flex items-center justify-between shrink-0 z-40 sticky top-0">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-colors">
+                                    <Menu size={19}/>
                                 </button>
-                                <div className="h-6 w-px bg-slate-200 hidden md:block"></div>
-                                <div className="hidden sm:flex items-center gap-2 text-sm font-semibold text-slate-500">
-                                    <span>Gestão de Notas</span>
-                                    <ChevronRight size={14} className="text-slate-300"/>
-                                    <span className="text-slate-800 capitalize">{activeTab === 'historico' ? 'Base de Dados' : activeTab.replace('-', ' ')}</span>
+                                <div className="h-5 w-px bg-slate-200"></div>
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                                    <span>Notas Fiscais</span>
+                                    <ChevronRight size={13} className="text-slate-300"/>
+                                    <span className="text-slate-800 font-bold capitalize">
+                                        {activeTab === 'historico' ? 'Base de Dados' : activeTab === 'lancar' ? 'Novo Registro' : activeTab === 'lote' ? 'Importação em Lote' : 'Dashboard'}
+                                    </span>
                                 </div>
                             </div>
                             
-                            <div className="flex items-center gap-2">
-                                <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border transition-colors ${carregando ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
-                                    {carregando ? <RefreshCw size={14} className="animate-spin"/> : <Cloud size={14}/>}
-                                    <span className="hidden sm:inline">{carregando ? 'Sincronizando...' : 'Cloud Conectada'}</span>
+                            <div className="flex items-center gap-2.5">
+                                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${carregando ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}>
+                                    {carregando ? <RefreshCw size={12} className="animate-spin"/> : <Cloud size={12}/>}
+                                    <span className="hidden sm:inline">{carregando ? 'Sincronizando...' : 'Online'}</span>
                                 </div>
                             </div>
                         </header>
 
-                        <main className="flex-1 overflow-y-auto p-6 md:p-8">
-                            <div className="max-w-[1400px] mx-auto space-y-8">
+                        <main className="flex-1 overflow-y-auto p-5 md:p-7">
+                            <div className="max-w-[1400px] mx-auto space-y-6">
                                 
-                                {/* ----------------------- TAB: DASHBOARD ----------------------- */}
+                                {}
                                 {activeTab === 'dashboard' && (
                                     <div className="space-y-6 animate-fade-in">
                                         
-                                        {/* Cabeçalho do Dashboard */}
-                                        <div className="bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-800 rounded-2xl p-8 text-white shadow-xl shadow-blue-900/10 flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 -mt-10 -mr-10 opacity-10">
-                                                <TrendingUp size={200} />
+                                        {/* Banner do Dashboard */}
+                                        <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-2xl p-7 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
+                                            <div className="relative z-10 space-y-1 text-center md:text-left">
+                                                <span className="bg-white/10 px-3 py-0.5 rounded-full text-xs font-bold text-blue-200 uppercase tracking-widest border border-white/10 inline-block mb-1">
+                                                    Controle de Fluxo
+                                                </span>
+                                                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Painel Gerencial de Faturas</h2>
+                                                <p className="text-blue-100/80 text-xs sm:text-sm font-normal max-w-xl">
+                                                    Monitore lançamentos, classifique amostras e registre justificativas de pendências com sincronização em tempo real.
+                                                </p>
                                             </div>
-                                            <div className="relative z-10">
-                                                <h2 className="text-3xl font-extrabold mb-2 tracking-tight">Painel de Controle</h2>
-                                                <p className="text-blue-100/90 text-sm font-medium">Acompanhamento e gestão de processamento em tempo real.</p>
-                                            </div>
-                                            <div className="bg-white/10 p-5 rounded-2xl backdrop-blur-md border border-white/20 text-center min-w-[240px] relative z-10 shadow-inner">
-                                                <p className="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Total Processado</p>
-                                                <p className="text-3xl font-extrabold tracking-tight text-white">R$ {totalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Cartões KPI */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-emerald-300 hover:shadow-md transition-all cursor-default group">
-                                                <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-105 transition-transform"><CheckCircle2 size={26}/></div>
-                                                <div>
-                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Notas Lançadas</p>
-                                                    <p className="text-2xl font-extrabold text-slate-800">{notas.filter(n => n.status === 'lancada').length}</p>
-                                                </div>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-amber-300 hover:shadow-md transition-all cursor-default group">
-                                                <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100 group-hover:scale-105 transition-transform"><Clock size={26}/></div>
-                                                <div>
-                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Ações Pendentes</p>
-                                                    <p className="text-2xl font-extrabold text-slate-800">{pendentes}</p>
-                                                </div>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-5 hover:border-blue-300 hover:shadow-md transition-all cursor-default group">
-                                                <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-105 transition-transform"><FileText size={26}/></div>
-                                                <div>
-                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Total de Registos</p>
-                                                    <p className="text-2xl font-extrabold text-slate-800">{notas.length}</p>
-                                                </div>
+                                            
+                                            <div className="bg-white/10 p-5 rounded-2xl backdrop-blur-md border border-white/20 text-center min-w-[220px] relative z-10 shadow-sm">
+                                                <p className="text-blue-200 text-[11px] font-bold uppercase tracking-wider mb-0.5">Total Financeiro</p>
+                                                <p className="text-2xl sm:text-3xl font-extrabold tracking-tight font-mono-numbers">
+                                                    R$ {formatMoeda(metricas.totalGeral)}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        {/* Layout em 2 Colunas */}
+                                        {/* Cartões de Indicadores Chave */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-soft flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                                                    <CheckCircle2 size={22}/>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Notas Lançadas</p>
+                                                    <p className="text-2xl font-black text-slate-800 font-mono-numbers">{metricas.lancadas}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-soft flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-100">
+                                                    <Clock size={22}/>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Pendentes</p>
+                                                    <p className="text-2xl font-black text-slate-800 font-mono-numbers">{metricas.pendentes}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-soft flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100">
+                                                    <Package size={22}/>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Aguard. Amostras</p>
+                                                    <p className="text-2xl font-black text-slate-800 font-mono-numbers">{metricas.amostras}</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-soft flex items-center gap-4">
+                                                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                                                    <MessageSquare size={22}/>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">Justificadas</p>
+                                                    <p className="text-2xl font-black text-slate-800 font-mono-numbers">{metricas.pendentesComJustificativa}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Distribuição e Últimas Atividades */}
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                            {/* Atividade Recente */}
-                                            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-                                                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                                    <h3 className="font-bold text-slate-800 text-lg">Atividade Recente</h3>
-                                                    <button onClick={() => setActiveTab('historico')} className="text-sm text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">Ver Tabela <ArrowRight size={14}/></button>
+                                            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col overflow-hidden">
+                                                <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                                    <div>
+                                                        <h3 className="font-bold text-slate-800 text-sm">Últimos Documentos Registrados</h3>
+                                                        <p className="text-[11px] text-slate-400">Atividade recente de cadastro</p>
+                                                    </div>
+                                                    <button onClick={() => setActiveTab('historico')} className="text-xs text-blue-600 font-bold hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">
+                                                        Ver Todos <ArrowRight size={13}/>
+                                                    </button>
                                                 </div>
-                                                <div className="flex-1 p-0">
-                                                    <div className="divide-y divide-slate-100">
-                                                        {notas.slice(0, 5).map(n => {
-                                                            const conf = getStatusConfig(n.status);
-                                                            return (
-                                                            <div key={n.id} className="p-4 px-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center shrink-0">
-                                                                        <FileText size={20}/>
+                                                <div className="divide-y divide-slate-100 flex-1">
+                                                    {notas.slice(0, 5).map(n => {
+                                                        const conf = getStatusConfig(n.status);
+                                                        return (
+                                                            <div key={n.id} className="p-4 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 flex items-center justify-center shrink-0">
+                                                                        <FileText size={18}/>
                                                                     </div>
                                                                     <div>
-                                                                        <p className="font-bold text-slate-800">Fatura #{n.numero || 'N/D'}</p>
-                                                                        <p className="text-xs font-semibold text-slate-500 mt-0.5">{n.fornecedor || 'Fornecedor não identificado'} &bull; {formatData(n.dataLancamento)}</p>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="font-bold text-slate-800 text-sm">NF #{n.numero || 'S/N'}</span>
+                                                                            {n.observacao && (
+                                                                                <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded font-semibold flex items-center gap-1">
+                                                                                    <MessageSquare size={10}/> Justificada
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <p className="text-xs text-slate-500 font-medium truncate max-w-xs">{n.fornecedor || 'Fornecedor não identificado'}</p>
                                                                     </div>
                                                                 </div>
                                                                 <div className="text-right">
-                                                                    <p className="font-extrabold text-slate-800 mb-1">R$ {parseFloat(n.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-                                                                    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border ${conf.class}`}>
+                                                                    <p className="font-extrabold text-slate-800 text-sm font-mono-numbers">R$ {formatMoeda(n.valor)}</p>
+                                                                    <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold border ${conf.class} mt-0.5`}>
                                                                         {conf.icon} {conf.label}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                        )})}
-                                                        {notas.length === 0 && <div className="p-10 text-center text-slate-500 font-medium">Nenhum documento processado ainda.</div>}
-                                                    </div>
+                                                        );
+                                                    })}
+                                                    {notas.length === 0 && (
+                                                        <div className="p-10 text-center text-xs text-slate-400">Nenhuma nota cadastrada.</div>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Status Progress */}
-                                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
-                                                <h3 className="font-bold text-slate-800 text-lg mb-6">Distribuição</h3>
-                                                <div className="space-y-8 flex-1 justify-center flex flex-col">
+                                            {/* Gráfico / Progresso das Faturas */}
+                                            <div className="bg-white rounded-2xl border border-slate-200 shadow-soft p-5 flex flex-col justify-between">
+                                                <div>
+                                                    <h3 className="font-bold text-slate-800 text-sm mb-1">Status Operacional</h3>
+                                                    <p className="text-[11px] text-slate-400 mb-6">Proporção dos lançamentos atuais</p>
+                                                </div>
+
+                                                <div className="space-y-5">
                                                     <div>
-                                                        <div className="flex justify-between text-sm mb-2">
-                                                            <span className="font-bold text-slate-600 flex items-center gap-2"><Clock size={16} className="text-amber-500"/> Pendentes</span>
-                                                            <span className="font-extrabold text-slate-800">{notas.filter(n => n.status === 'pendente').length}</span>
+                                                        <div className="flex justify-between text-xs mb-1.5 font-bold">
+                                                            <span className="text-slate-600 flex items-center gap-1.5"><Clock size={14} className="text-amber-500"/> Pendentes</span>
+                                                            <span className="text-slate-800">{metricas.pendentes}</span>
                                                         </div>
-                                                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner">
-                                                            <div className="bg-amber-500 h-full rounded-full transition-all duration-1000" style={{ width: `${notas.length ? (notas.filter(n => n.status === 'pendente').length / notas.length) * 100 : 0}%` }}></div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div className="bg-amber-500 h-full rounded-full transition-all duration-700" style={{ width: `${notas.length ? (metricas.pendentes / notas.length) * 100 : 0}%` }}></div>
                                                         </div>
                                                     </div>
+
                                                     <div>
-                                                        <div className="flex justify-between text-sm mb-2">
-                                                            <span className="font-bold text-slate-600 flex items-center gap-2"><Package size={16} className="text-purple-500"/> Aguardando Amostra</span>
-                                                            <span className="font-extrabold text-slate-800">{notas.filter(n => n.status === 'aguardando_amostra').length}</span>
+                                                        <div className="flex justify-between text-xs mb-1.5 font-bold">
+                                                            <span className="text-slate-600 flex items-center gap-1.5"><Package size={14} className="text-purple-500"/> Aguard. Amostras</span>
+                                                            <span className="text-slate-800">{metricas.amostras}</span>
                                                         </div>
-                                                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner">
-                                                            <div className="bg-purple-500 h-full rounded-full transition-all duration-1000" style={{ width: `${notas.length ? (notas.filter(n => n.status === 'aguardando_amostra').length / notas.length) * 100 : 0}%` }}></div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div className="bg-purple-500 h-full rounded-full transition-all duration-700" style={{ width: `${notas.length ? (metricas.amostras / notas.length) * 100 : 0}%` }}></div>
                                                         </div>
                                                     </div>
+
                                                     <div>
-                                                        <div className="flex justify-between text-sm mb-2">
-                                                            <span className="font-bold text-slate-600 flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500"/> Lançadas</span>
-                                                            <span className="font-extrabold text-slate-800">{notas.filter(n => n.status === 'lancada').length}</span>
+                                                        <div className="flex justify-between text-xs mb-1.5 font-bold">
+                                                            <span className="text-slate-600 flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> Lançadas</span>
+                                                            <span className="text-slate-800">{metricas.lancadas}</span>
                                                         </div>
-                                                        <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner">
-                                                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-1000" style={{ width: `${notas.length ? (notas.filter(n => n.status === 'lancada').length / notas.length) * 100 : 0}%` }}></div>
+                                                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                                            <div className="bg-emerald-500 h-full rounded-full transition-all duration-700" style={{ width: `${notas.length ? (metricas.lancadas / notas.length) * 100 : 0}%` }}></div>
                                                         </div>
                                                     </div>
+                                                </div>
+
+                                                <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+                                                    <span className="text-xs font-semibold text-slate-500">
+                                                        Taxa de Finalização: <strong className="text-slate-800">{notas.length ? Math.round((metricas.lancadas / notas.length) * 100) : 0}%</strong>
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* ----------------------- TAB: LANCAR INDIVIDUAL ----------------------- */}
+                                {}
                                 {activeTab === 'lancar' && (
-                                    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                                            <h2 className="text-2xl font-extrabold text-slate-800">Novo Registo</h2>
-                                            <p className="text-sm font-medium text-slate-500 mt-1">Insira os dados da nota ou envie o ficheiro (a data assume o dia de hoje automaticamente).</p>
+                                    <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
+                                        <div className="bg-white p-6 rounded-2xl shadow-soft border border-slate-200">
+                                            <h2 className="text-xl font-black text-slate-800">Novo Registro de Nota Fiscal</h2>
+                                            <p className="text-xs text-slate-500 mt-1">
+                                                Faça upload do documento (PDF/XML) para preenchimento inteligente e adicione justificativas caso a nota fique pendente.
+                                            </p>
                                         </div>
                                         <FormIndividual onSave={salvarNota} />
                                     </div>
                                 )}
 
-                                {/* ----------------------- TAB: IMPORTAÇÃO LOTE ----------------------- */}
+                                {}
                                 {activeTab === 'lote' && (
-                                    <div className="max-w-5xl mx-auto animate-fade-in space-y-8">
-                                        <div className="text-center mb-6">
-                                            <h2 className="text-3xl font-extrabold text-slate-800">Importação em Lote</h2>
-                                            <p className="text-sm font-medium text-slate-500 mt-2 max-w-2xl mx-auto">Arraste múltiplos ficheiros XML ou PDF. O sistema extrairá os dados de todos eles simultaneamente.</p>
+                                    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+                                        <div className="text-center mb-4">
+                                            <h2 className="text-2xl font-black text-slate-800">Importação em Lote</h2>
+                                            <p className="text-xs text-slate-500 mt-1">Carregue vários PDFs ou XMLs de uma vez para processamento acelerado.</p>
                                         </div>
                                         <FormLote onSave={salvarLote} />
                                     </div>
                                 )}
 
-                                {/* ----------------------- TAB: HISTÓRICO / BASE DE DADOS ----------------------- */}
+                                {}
                                 {activeTab === 'historico' && (
-                                    <div className="space-y-6 animate-fade-in flex flex-col h-[calc(100vh-140px)]">
-                                        <div className="flex flex-col lg:flex-row gap-4 items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                                            <div>
-                                                <h2 className="text-2xl font-extrabold text-slate-800">Base de Dados</h2>
-                                                <p className="text-sm font-medium text-slate-500 mt-1">Gestão completa e busca de notas fiscais.</p>
-                                            </div>
-                                            
-                                            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                                                <button onClick={toggleModoSelecao} className={`px-4 py-2.5 border rounded-xl text-sm font-semibold outline-none shadow-sm transition-all flex items-center gap-2 ${modoSelecao ? 'bg-purple-100 border-purple-300 text-purple-700 hover:bg-purple-200' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-purple-600 focus:ring-4 focus:ring-blue-500/10'}`}>
-                                                    <CheckSquare size={16}/> {modoSelecao ? 'Sair da Seleção' : 'Selecionar Notas'}
+                                    <div className="space-y-4 animate-fade-in flex flex-col h-[calc(100vh-130px)]">
+                                        
+                                        {/* Barra de Filtros e Busca */}
+                                        <div className="bg-white p-4 rounded-2xl shadow-soft border border-slate-200 flex flex-col lg:flex-row gap-3 items-center justify-between">
+                                            <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                                                <button 
+                                                    onClick={toggleModoSelecao} 
+                                                    className={`px-3.5 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${modoSelecao ? 'bg-purple-100 border-purple-300 text-purple-800 shadow-sm' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                                                >
+                                                    <CheckSquare size={15}/> {modoSelecao ? 'Sair da Seleção' : 'Selecionar Notas'}
                                                 </button>
-                                                
-                                                <div className="relative flex-1 lg:w-64">
-                                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                                                    <input className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm bg-slate-50" placeholder="Procurar fatura, fornecedor..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+
+                                                <div className="relative flex-1 sm:w-64">
+                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15}/>
+                                                    <input 
+                                                        className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs font-medium focus:border-blue-500 outline-none bg-slate-50/50" 
+                                                        placeholder="Buscar por NF, fornecedor, motivo..." 
+                                                        value={searchTerm} 
+                                                        onChange={e => setSearchTerm(e.target.value)} 
+                                                    />
                                                 </div>
-                                                
-                                                <select value={filtroClassificacao} onChange={e => setFiltroClassificacao(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none cursor-pointer shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all">
+                                            </div>
+
+                                            <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-end">
+                                                <select 
+                                                    value={filtroJustificativa} 
+                                                    onChange={e => setFiltroJustificativa(e.target.value)} 
+                                                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300"
+                                                >
+                                                    <option value="todas">Todas as Notas</option>
+                                                    <option value="com_obs">Com Justificativa</option>
+                                                    <option value="sem_obs">Sem Justificativa</option>
+                                                </select>
+
+                                                <select 
+                                                    value={filtroClassificacao} 
+                                                    onChange={e => setFiltroClassificacao(e.target.value)} 
+                                                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300"
+                                                >
                                                     <option value="todas">Qualquer Cadastro</option>
-                                                    <option value="padrao">Cadastro Padrão</option>
+                                                    <option value="padrao">Padrão</option>
                                                     <option value="sem_cadastro">Sem Cadastro</option>
                                                     <option value="manutencao">Manutenção</option>
                                                 </select>
 
-                                                <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} className="py-2.5 px-4 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-700 outline-none cursor-pointer shadow-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all">
+                                                <select 
+                                                    value={filtroStatus} 
+                                                    onChange={e => setFiltroStatus(e.target.value)} 
+                                                    className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:border-slate-300"
+                                                >
                                                     <option value="todos">Qualquer Status</option>
                                                     <option value="pendente">Pendentes</option>
                                                     <option value="aguardando_amostra">Aguard. Amostras</option>
@@ -888,61 +1306,75 @@
                                             </div>
                                         </div>
 
-                                        {/* BARRA DE AÇÃO - EMAIL (Aparece apenas quando tem notas selecionadas) */}
+                                        {/* Barra de Ação de E-mail (quando há seleção) */}
                                         {notasSelecionadas.length > 0 && (
-                                            <div className="bg-purple-50 border border-purple-200 p-4 rounded-xl flex justify-between items-center shadow-sm animate-fade-in">
+                                            <div className="bg-purple-50 border border-purple-200/90 p-3.5 rounded-xl flex flex-col sm:flex-row justify-between items-center gap-3 animate-fade-in shadow-sm">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="bg-purple-100 text-purple-600 p-2.5 rounded-xl shadow-sm">
-                                                        <CheckSquare size={20} strokeWidth={2.5} />
+                                                    <div className="bg-purple-200 text-purple-800 p-2 rounded-lg">
+                                                        <CheckSquare size={18} />
                                                     </div>
                                                     <div>
-                                                        <span className="font-extrabold text-purple-800 block text-[15px]">{notasSelecionadas.length} nota(s) selecionada(s)</span>
-                                                        <span className="text-xs font-semibold text-purple-600">Pronto para gerar e-mail com os dados da seleção.</span>
+                                                        <span className="font-extrabold text-purple-900 block text-xs">
+                                                            {notasSelecionadas.length === 1 ? '1 nota selecionada' : `${notasSelecionadas.length} notas selecionadas`}
+                                                        </span>
+                                                        <span className="text-[11px] text-purple-700 font-medium">
+                                                            {notasSelecionadas.length === 1 ? 'O e-mail será gerado automaticamente no singular.' : 'O e-mail será gerado em formato plural.'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => setNotasSelecionadas([])} className="text-purple-600 text-sm font-bold hover:bg-purple-100 px-4 py-2.5 rounded-lg transition-colors">Cancelar Seleção</button>
-                                                    <button onClick={abrirModalEmail} className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm shadow-purple-200 hover:bg-purple-700 hover:shadow-md transition-all flex items-center gap-2">
-                                                        <Mail size={16} strokeWidth={2.5}/> Gerar E-mail
+                                                    <button onClick={() => setNotasSelecionadas([])} className="text-purple-700 text-xs font-bold hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors">
+                                                        Limpar
+                                                    </button>
+                                                    <button onClick={abrirModalEmail} className="bg-purple-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow hover:bg-purple-700 transition-all flex items-center gap-1.5">
+                                                        <Mail size={14}/> Gerar E-mail {notasSelecionadas.length === 1 ? '(1 Nota)' : `(${notasSelecionadas.length})`}
                                                     </button>
                                                 </div>
                                             </div>
                                         )}
 
-                                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col flex-1 overflow-hidden min-h-[400px]">
+                                        {/* Tabela de Notas Fiscais */}
+                                        <div className="bg-white rounded-2xl border border-slate-200 shadow-soft flex flex-col flex-1 overflow-hidden min-h-[380px]">
                                             <div className="overflow-x-auto flex-1">
-                                                <table className="w-full text-left text-sm border-collapse min-w-[1100px]">
-                                                    <thead className="bg-slate-100/80 border-b border-slate-200 font-bold text-slate-600 sticky top-0 z-10 text-xs uppercase tracking-wider">
+                                                <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
+                                                    <thead className="bg-slate-50/90 border-b border-slate-200 font-bold text-slate-600 sticky top-0 z-10 text-[11px] uppercase tracking-wider">
                                                         <tr>
                                                             {modoSelecao && (
-                                                                <th className="px-5 py-4 w-12 text-center animate-fade-in">
-                                                                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-sm" 
-                                                                        checked={notasSelecionadas.length > 0 && notasSelecionadas.length === notasFiltradas.length}
+                                                                <th className="px-4 py-3.5 w-12 text-center">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer" 
+                                                                        checked={notasFiltradas.length > 0 && notasSelecionadas.length === notasFiltradas.length}
                                                                         onChange={handleSelectAll}
                                                                     />
                                                                 </th>
                                                             )}
-                                                            <th className="px-6 py-4 whitespace-nowrap">Status</th>
-                                                            <th className="px-6 py-4 whitespace-nowrap">Classificação</th>
-                                                            <th className="px-6 py-4 whitespace-nowrap">Fatura / Detalhes</th>
-                                                            <th className="px-6 py-4 whitespace-nowrap">Fornecedor</th>
-                                                            <th className="px-6 py-4 text-right whitespace-nowrap">Valor Bruto</th>
-                                                            <th className="px-6 py-4 text-center whitespace-nowrap">Arquivo</th>
-                                                            <th className="px-6 py-4 text-right whitespace-nowrap">Ações</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Status</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Classificação</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Doc / Fatura</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Fornecedor</th>
+                                                            <th className="px-5 py-3.5 whitespace-nowrap">Justificativa / Motivo</th>
+                                                            <th className="px-5 py-3.5 text-right whitespace-nowrap">Valor Bruto</th>
+                                                            <th className="px-5 py-3.5 text-center whitespace-nowrap">Anexo</th>
+                                                            <th className="px-5 py-3.5 text-right whitespace-nowrap">Ações</th>
                                                         </tr>
                                                     </thead>
                                                     {datasOrdenadas.length === 0 ? (
                                                         <tbody>
-                                                            <tr><td colSpan={modoSelecao ? "8" : "7"} className="py-20 text-center font-medium text-slate-500 bg-slate-50">Nenhum registo atende aos critérios de pesquisa.</td></tr>
+                                                            <tr>
+                                                                <td colSpan={modoSelecao ? "9" : "8"} className="py-20 text-center font-medium text-slate-400 bg-slate-50/50">
+                                                                    Nenhum registo encontrado com os filtros aplicados.
+                                                                </td>
+                                                            </tr>
                                                         </tbody>
                                                     ) : (
                                                         datasOrdenadas.map(data => (
                                                             <React.Fragment key={data}>
-                                                                <tbody className="bg-slate-50">
+                                                                <tbody className="bg-slate-50/80 border-t border-slate-200">
                                                                     <tr>
-                                                                        <td colSpan={modoSelecao ? "8" : "7"} className="px-6 py-2.5 text-xs font-bold text-slate-500 border-y border-slate-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.01)]">
-                                                                            <CalendarDays size={14} className="inline-block mr-2 text-slate-400 -mt-0.5"/>
-                                                                            Lançamentos do dia: {formatData(data)}
+                                                                        <td colSpan={modoSelecao ? "9" : "8"} className="px-5 py-2 text-[11px] font-bold text-slate-500">
+                                                                            <CalendarDays size={13} className="inline mr-1.5 text-slate-400 -mt-0.5"/>
+                                                                            Lançamentos: {formatData(data)}
                                                                         </td>
                                                                     </tr>
                                                                 </tbody>
@@ -950,90 +1382,149 @@
                                                                     {notasAgrupadas[data].map(n => {
                                                                         const stConf = getStatusConfig(n.status);
                                                                         const classConf = getClassificacaoConfig(n.classificacao);
+                                                                        const isNaoLancada = n.status !== 'lancada';
 
                                                                         return (
-                                                                        <tr key={n.id} className={`transition-colors group ${notasSelecionadas.includes(n.id) ? 'bg-purple-50/50' : 'hover:bg-blue-50/40'}`}>
-                                                                            {modoSelecao && (
-                                                                                <td className="px-5 py-3.5 text-center whitespace-nowrap animate-fade-in">
-                                                                                    <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer shadow-sm"
-                                                                                        checked={notasSelecionadas.includes(n.id)}
-                                                                                        onChange={() => handleSelectNota(n.id)}
-                                                                                    />
-                                                                                </td>
-                                                                            )}
-                                                                            <td className="px-6 py-3.5 whitespace-nowrap">
-                                                                                <button onClick={() => alternarStatus(n)} className={`px-2.5 py-1.5 rounded-md text-xs font-bold border transition-all shadow-sm flex items-center gap-1.5 ${stConf.class}`}>
-                                                                                    {stConf.icon} {stConf.label}
-                                                                                </button>
-                                                                            </td>
-                                                                            <td className="px-6 py-3.5 whitespace-nowrap">
-                                                                                <div className="relative inline-block w-full max-w-[140px]">
-                                                                                    <select 
-                                                                                        value={n.classificacao || 'padrao'} 
-                                                                                        onChange={(e) => atualizarClassificacao(n.id, e.target.value)}
-                                                                                        className={`w-full py-1.5 pl-2.5 pr-8 border rounded-md text-xs font-bold outline-none cursor-pointer shadow-sm transition-colors appearance-none ${classConf}`}
-                                                                                    >
-                                                                                        <option value="padrao">Padrão</option>
-                                                                                        <option value="sem_cadastro">Sem Cadastro</option>
-                                                                                        <option value="manutencao">Manutenção</option>
-                                                                                    </select>
-                                                                                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50"/>
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="px-6 py-3.5 font-medium text-slate-800 whitespace-nowrap">
-                                                                                <div className="flex flex-col items-start gap-1.5">
-                                                                                    <span className="text-sm font-extrabold text-slate-800">#{n.numero}</span>
-                                                                                    
-                                                                                    {/* Badges de Amostra e Centro de Custo agrupados */}
-                                                                                    <div className="flex gap-2">
-                                                                                        {n.codigosAmostra && (
-                                                                                            <span onClick={() => setModalAmostra({ ...n, tempCode: n.codigosAmostra, tempCentroCusto: n.centroCusto || '' })} className="text-[10px] text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200 flex items-center gap-1 cursor-pointer hover:bg-purple-200 transition-colors shadow-sm font-bold" title="Editar código">
-                                                                                                <Tag size={10}/> {n.codigosAmostra}
-                                                                                            </span>
-                                                                                        )}
-                                                                                        {n.centroCusto && (
-                                                                                            <span onClick={() => setModalAmostra({ ...n, tempCode: n.codigosAmostra || 'AM', tempCentroCusto: n.centroCusto })} className="text-[10px] text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md border border-blue-200 flex items-center gap-1 cursor-pointer hover:bg-blue-200 transition-colors shadow-sm font-bold" title="Editar centro de custo">
-                                                                                                <Building2 size={10}/> {n.centroCusto}
-                                                                                            </span>
-                                                                                        )}
-                                                                                    </div>
+                                                                            <tr key={n.id} className={`transition-colors ${notasSelecionadas.includes(n.id) ? 'bg-purple-50/40' : 'hover:bg-slate-50/70'}`}>
+                                                                                {modoSelecao && (
+                                                                                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                                                                                        <input 
+                                                                                            type="checkbox" 
+                                                                                            className="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                                                                            checked={notasSelecionadas.includes(n.id)}
+                                                                                            onChange={() => handleSelectNota(n.id)}
+                                                                                        />
+                                                                                    </td>
+                                                                                )}
 
-                                                                                    {n.status === 'aguardando_amostra' && (!n.codigosAmostra || !n.centroCusto) && (
-                                                                                        <button onClick={() => setModalAmostra({ ...n, tempCode: n.codigosAmostra || 'AM', tempCentroCusto: n.centroCusto || '' })} className="text-[10px] text-purple-600 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100 hover:bg-purple-100 flex items-center gap-1 font-bold mt-0.5 transition-colors">
-                                                                                            <Plus size={10}/> Adicionar Info. Amostra
-                                                                                        </button>
-                                                                                    )}
-                                                                                </div>
-                                                                            </td>
-                                                                            <td className="px-6 py-3.5 text-slate-600 font-semibold truncate max-w-[250px] whitespace-nowrap">{n.fornecedor || '---'}</td>
-                                                                            <td className="px-6 py-3.5 text-right font-extrabold text-slate-800 whitespace-nowrap">R$ {parseFloat(n.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                                            <td className="px-6 py-3.5 text-center whitespace-nowrap">
-                                                                                {n.arquivoNome ? (
-                                                                                    <button onClick={() => abrirVisualizacao(n)} className="inline-flex p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors border border-transparent hover:border-blue-200 shadow-sm" title="Ver Anexo">
-                                                                                        <Paperclip size={18}/>
+                                                                                {/* Status Alternável */}
+                                                                                <td className="px-5 py-3 whitespace-nowrap">
+                                                                                    <button 
+                                                                                        onClick={() => alternarStatus(n)} 
+                                                                                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all flex items-center gap-1.5 ${stConf.class}`}
+                                                                                        title="Clique para avançar o status"
+                                                                                    >
+                                                                                        {stConf.icon} {stConf.label}
                                                                                     </button>
-                                                                                ) : (
-                                                                                    <span className="text-slate-300">-</span>
-                                                                                )}
-                                                                            </td>
-                                                                            <td className="px-6 py-3.5 flex justify-end gap-1.5 whitespace-nowrap">
-                                                                                <button onClick={() => setEditingNota(n)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors border border-transparent hover:border-blue-200 shadow-sm" title="Editar"><Pencil size={18}/></button>
-                                                                                {n.status !== 'lancada' && (
-                                                                                    <button onClick={() => marcarLancada(n.id)} className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors border border-transparent hover:border-emerald-200 shadow-sm" title="Marcar como Lançada"><CheckCircle2 size={18}/></button>
-                                                                                )}
-                                                                                <button onClick={() => deletarNota(n)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-colors border border-transparent hover:border-red-200 shadow-sm" title="Remover"><Trash2 size={18}/></button>
-                                                                            </td>
-                                                                        </tr>
-                                                                    )})}
+                                                                                </td>
+
+                                                                                {/* Seletor de Classificação de Cadastro */}
+                                                                                <td className="px-5 py-3 whitespace-nowrap">
+                                                                                    <div className="relative inline-block w-32">
+                                                                                        <select 
+                                                                                            value={n.classificacao || 'padrao'} 
+                                                                                            onChange={(e) => atualizarClassificacao(n.id, e.target.value)}
+                                                                                            className={`w-full py-1 pl-2 pr-6 border rounded-lg text-xs font-semibold outline-none cursor-pointer appearance-none ${classConf}`}
+                                                                                        >
+                                                                                            <option value="padrao">Padrão</option>
+                                                                                            <option value="sem_cadastro">Sem Cadastro</option>
+                                                                                            <option value="manutencao">Manutenção</option>
+                                                                                        </select>
+                                                                                        <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-40"/>
+                                                                                    </div>
+                                                                                </td>
+
+                                                                                {/* Número da Fatura e Badges de Amostra */}
+                                                                                <td className="px-5 py-3 whitespace-nowrap">
+                                                                                    <div className="flex flex-col items-start gap-1">
+                                                                                        <span className="font-extrabold text-slate-800 font-mono-numbers">#{n.numero}</span>
+                                                                                        <div className="flex flex-wrap gap-1">
+                                                                                            {n.codigosAmostra && (
+                                                                                                <span 
+                                                                                                    onClick={() => setModalAmostra({ ...n, tempCode: n.codigosAmostra, tempCentroCusto: n.centroCusto || '' })} 
+                                                                                                    className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 flex items-center gap-1 cursor-pointer font-bold" 
+                                                                                                    title="Editar amostra"
+                                                                                                >
+                                                                                                    <Tag size={10}/> {n.codigosAmostra}
+                                                                                                </span>
+                                                                                            )}
+                                                                                            {n.centroCusto && (
+                                                                                                <span 
+                                                                                                    onClick={() => setModalAmostra({ ...n, tempCode: n.codigosAmostra || 'AM', tempCentroCusto: n.centroCusto })} 
+                                                                                                    className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1 cursor-pointer font-bold" 
+                                                                                                    title="Editar CC"
+                                                                                                >
+                                                                                                    <Building2 size={10}/> {n.centroCusto}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </td>
+
+                                                                                {/* Fornecedor */}
+                                                                                <td className="px-5 py-3 text-slate-700 font-semibold truncate max-w-[200px] whitespace-nowrap">
+                                                                                    {n.fornecedor || '---'}
+                                                                                </td>
+
+                                                                                {/* JUSTIFICATIVA / OBSERVAÇÃO PARA NOTAS NÃO LANÇADAS */}
+                                                                                <td className="px-5 py-3 max-w-[260px]">
+                                                                                    {isNaoLancada ? (
+                                                                                        n.observacao ? (
+                                                                                            <div 
+                                                                                                onClick={() => setModalObservacao({ id: n.id, numero: n.numero, fornecedor: n.fornecedor, textoObs: n.observacao })}
+                                                                                                className="group flex items-start gap-1.5 p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100/80 border border-amber-200 text-amber-900 cursor-pointer transition-colors"
+                                                                                                title="Clique para editar a justificativa"
+                                                                                            >
+                                                                                                <MessageSquare size={13} className="text-amber-600 shrink-0 mt-0.5"/>
+                                                                                                <span className="text-[11px] leading-tight line-clamp-2 font-medium">
+                                                                                                    {n.observacao}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <button 
+                                                                                                onClick={() => setModalObservacao({ id: n.id, numero: n.numero, fornecedor: n.fornecedor, textoObs: '' })}
+                                                                                                className="text-[11px] text-amber-700 hover:text-amber-900 bg-amber-50/70 hover:bg-amber-100 border border-dashed border-amber-300 px-2 py-1 rounded-lg flex items-center gap-1 font-semibold transition-colors"
+                                                                                            >
+                                                                                                <Plus size={11}/> Adicionar Motivo
+                                                                                            </button>
+                                                                                        )
+                                                                                    ) : (
+                                                                                        <span className="text-slate-400 text-[11px] italic">Lançamento concluído</span>
+                                                                                    )}
+                                                                                </td>
+
+                                                                                {/* Valor Bruto */}
+                                                                                <td className="px-5 py-3 text-right font-extrabold text-slate-800 font-mono-numbers whitespace-nowrap">
+                                                                                    R$ {formatMoeda(n.valor)}
+                                                                                </td>
+
+                                                                                {/* Anexo PDF/XML */}
+                                                                                <td className="px-5 py-3 text-center whitespace-nowrap">
+                                                                                    {n.arquivoNome ? (
+                                                                                        <button onClick={() => abrirVisualizacao(n)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Visualizar documento">
+                                                                                            <Paperclip size={16}/>
+                                                                                        </button>
+                                                                                    ) : (
+                                                                                        <span className="text-slate-300">-</span>
+                                                                                    )}
+                                                                                </td>
+
+                                                                                {/* Ações */}
+                                                                                <td className="px-5 py-3 text-right whitespace-nowrap">
+                                                                                    <div className="flex justify-end items-center gap-1">
+                                                                                        <button onClick={() => setEditingNota(n)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><Pencil size={15}/></button>
+                                                                                        {n.status !== 'lancada' && (
+                                                                                            <button onClick={() => marcarLancada(n.id)} className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Marcar como lançada"><CheckCircle2 size={15}/></button>
+                                                                                        )}
+                                                                                        <button onClick={() => deletarNota(n)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Excluir"><Trash2 size={15}/></button>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        );
+                                                                    })}
                                                                 </tbody>
                                                             </React.Fragment>
                                                         ))
                                                     )}
                                                 </table>
                                             </div>
-                                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wide">
-                                                <span>{notasFiltradas.length} registos encontrados</span>
-                                                <span className="text-slate-800 text-sm">Soma: R$ {notasFiltradas.reduce((acc, n) => acc + parseFloat(n.valor || 0), 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+
+                                            {/* Rodapé Informativo */}
+                                            <div className="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs font-bold text-slate-500">
+                                                <span>{notasFiltradas.length} de {notas.length} notas listadas</span>
+                                                <span className="text-slate-800 font-mono-numbers">
+                                                    Subtotal: R$ {formatMoeda(notasFiltradas.reduce((acc, n) => acc + (parseFloat(n.valor) || 0), 0))}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1044,8 +1535,6 @@
                 </div>
             );
         }
-
-        // --- COMPONENTES AUXILIARES ---
 
         const extrairDados = async (file) => {
             const dataHoje = new Date().toISOString().split('T')[0];
@@ -1086,9 +1575,12 @@
                         dataLancamento: dataHoje,
                         valor: valorM ? valorM[1].replace(/\./g, '').replace(',', '.') : '',
                         isAmostra: isAmostra,
-                        classificacao: 'padrao'
+                        classificacao: 'padrao',
+                        observacao: ''
                     };
-                } catch(e) { return { numero: '', fornecedor: '', dataLancamento: dataHoje, valor: '', isAmostra: false, classificacao: 'padrao' }; }
+                } catch(e) { 
+                    return { numero: '', fornecedor: '', dataLancamento: dataHoje, valor: '', isAmostra: false, classificacao: 'padrao', observacao: '' }; 
+                }
             } else {
                 const text = await file.text();
                 const xml = new DOMParser().parseFromString(text, "text/xml");
@@ -1106,20 +1598,33 @@
                     dataLancamento: dataHoje,
                     valor: get('vNF') || get('ValorServicos') || get('ValorLiquidoNfse') || '',
                     isAmostra: isAmostra,
-                    classificacao: 'padrao'
+                    classificacao: 'padrao',
+                    observacao: ''
                 };
             }
         };
 
         function FormIndividual({ onSave }) {
             const dataHoje = new Date().toISOString().split('T')[0];
-            const estadoInicial = { numero: '', fornecedor: '', dataLancamento: dataHoje, valor: '', status: 'pendente', classificacao: 'padrao', codigosAmostra: '', centroCusto: '' };
+            const estadoInicial = { 
+                numero: '', 
+                fornecedor: '', 
+                dataLancamento: dataHoje, 
+                valor: '', 
+                status: 'pendente', 
+                classificacao: 'padrao', 
+                codigosAmostra: '', 
+                centroCusto: '',
+                observacao: ''
+            };
             const [f, setF] = useState(estadoInicial);
             const [arq, setArq] = useState(null);
             const [lendo, setLendo] = useState(false);
 
             const handleFile = async (e) => {
-                const file = e.target.files[0]; if(!file) return; setLendo(true);
+                const file = e.target.files[0]; 
+                if(!file) return; 
+                setLendo(true);
                 const d = await extrairDados(file); 
                 setF(p => ({
                     ...p, 
@@ -1127,75 +1632,99 @@
                     status: d.isAmostra ? 'aguardando_amostra' : 'pendente',
                     codigosAmostra: d.isAmostra ? 'AM' : '' 
                 }));
-                const reader = new FileReader(); reader.onload = (ev) => { setArq({ name: file.name, data: ev.target.result }); setLendo(false); };
+                const reader = new FileReader(); 
+                reader.onload = (ev) => { 
+                    setArq({ name: file.name, data: ev.target.result }); 
+                    setLendo(false); 
+                };
                 reader.readAsDataURL(file);
             };
 
             const submitForm = (e) => {
                 e.preventDefault();
-                onSave({...f, id: gerarID(), arquivoNome: arq?.name, arquivoDataUrl: arq?.data, dataUpload: new Date().toISOString() });
+                onSave({
+                    ...f, 
+                    id: gerarID(), 
+                    arquivoNome: arq?.name, 
+                    arquivoDataUrl: arq?.data, 
+                    dataUpload: new Date().toISOString() 
+                });
                 setF(estadoInicial);
                 setArq(null);
             };
 
             return (
-                <form onSubmit={submitForm} className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-md space-y-8">
-                    
-                    <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 bg-slate-50 text-center relative group hover:bg-blue-50/60 hover:border-blue-400 transition-all cursor-pointer">
+                <form onSubmit={submitForm} className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-soft space-y-6">
+                    <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 bg-slate-50/70 text-center relative group hover:bg-blue-50/40 hover:border-blue-400 transition-all cursor-pointer">
                         <input type="file" accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFile} />
-                        <div className={`mx-auto w-16 h-16 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center text-blue-600 mb-4 transition-all group-hover:scale-110 group-hover:shadow-md ${lendo ? 'animate-pulse' : ''}`}>
-                            <UploadCloud size={28} />
+                        <div className={`mx-auto w-14 h-14 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center text-blue-600 mb-3 group-hover:scale-105 transition-transform ${lendo ? 'animate-pulse' : ''}`}>
+                            <UploadCloud size={24} />
                         </div>
-                        <p className="font-extrabold text-slate-800 text-lg">{arq ? arq.name : 'Selecionar Documento Digital (XML/PDF)'}</p>
-                        <p className="text-sm font-medium text-slate-500 mt-1">O sistema extrairá os dados e limpará as formatações automaticamente.</p>
+                        <p className="font-bold text-slate-800 text-sm">{arq ? arq.name : 'Selecionar Documento Digital (XML ou PDF)'}</p>
+                        <p className="text-xs text-slate-500 mt-1">Extração automática de número, fornecedor e valor</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
                         <div>
                             <label className="label-premium">Nº Nota Fiscal</label>
-                            <input required className="input-premium" placeholder="Ex: 123456" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} />
+                            <input required className="input-premium font-mono-numbers" placeholder="Ex: 10423" value={f.numero} onChange={e => setF({...f, numero: e.target.value})} />
                         </div>
                         <div>
                             <label className="label-premium">Data de Lançamento</label>
-                            <input type="date" required className="input-premium bg-slate-100 cursor-not-allowed border-slate-200 text-slate-500 font-semibold" value={f.dataLancamento} readOnly title="A data padrão agora é travada no preenchimento." />
+                            <input type="date" required className="input-premium bg-slate-100 text-slate-600 font-semibold" value={f.dataLancamento} onChange={e => setF({...f, dataLancamento: e.target.value})} />
                         </div>
                         <div className="md:col-span-2">
                             <label className="label-premium">Parceiro / Fornecedor</label>
-                            <input className="input-premium" placeholder="Nome da empresa emissora" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} />
+                            <input className="input-premium" placeholder="Razão social do emissor" value={f.fornecedor} onChange={e => setF({...f, fornecedor: e.target.value})} />
                         </div>
                         <div>
                             <label className="label-premium">Valor Bruto (R$)</label>
-                            <input type="number" step="0.01" required className="input-premium font-bold text-slate-800" placeholder="0.00" value={f.valor} onChange={e => setF({...f, valor: e.target.value})} />
+                            <input type="number" step="0.01" required className="input-premium font-mono-numbers font-bold" placeholder="0.00" value={f.valor} onChange={e => setF({...f, valor: e.target.value})} />
                         </div>
                         <div>
                             <label className="label-premium">Status Inicial</label>
                             <div className="relative">
-                                <select className="input-premium cursor-pointer appearance-none pr-10 font-semibold" value={f.status} onChange={e => setF({...f, status: e.target.value})}>
+                                <select className="input-premium cursor-pointer appearance-none pr-8 font-semibold" value={f.status} onChange={e => setF({...f, status: e.target.value})}>
                                     <option value="pendente">Pendente</option>
                                     <option value="aguardando_amostra">Aguard. Amostra</option>
                                     <option value="lancada">Lançada</option>
                                 </select>
-                                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
+                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"/>
                             </div>
                         </div>
 
+                        {/* Campo Justificativa se Pendente */}
+                        {f.status !== 'lancada' && (
+                            <div className="md:col-span-2 bg-amber-50/80 p-4 rounded-xl border border-amber-200">
+                                <label className="label-premium text-amber-800 flex items-center gap-1.5">
+                                    <MessageSquare size={13}/> Justificativa da Pendência (Opcional)
+                                </label>
+                                <input 
+                                    className="input-premium border-amber-200 focus:border-amber-500 text-xs bg-white" 
+                                    placeholder="Ex: Aguardando conferência física de lote / frete pendente" 
+                                    value={f.observacao} 
+                                    onChange={e => setF({...f, observacao: e.target.value})} 
+                                />
+                            </div>
+                        )}
+
                         {f.status === 'aguardando_amostra' && (
-                            <div className="md:col-span-2 bg-purple-50 p-6 rounded-xl border border-purple-100 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+                            <div className="md:col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="label-premium text-purple-700"><Tag size={14}/> Código da Amostra (AM)</label>
-                                    <input className="input-premium border-purple-200 focus:border-purple-500 focus:ring-purple-500/20" placeholder="Ex: AM123, AM456" value={f.codigosAmostra} onChange={e => setF({...f, codigosAmostra: e.target.value})} />
+                                    <label className="label-premium text-purple-700"><Tag size={13}/> Código da Amostra (AM)</label>
+                                    <input className="input-premium border-purple-200 text-xs" placeholder="Ex: AM123" value={f.codigosAmostra} onChange={e => setF({...f, codigosAmostra: e.target.value})} />
                                 </div>
                                 <div>
-                                    <label className="label-premium text-purple-700"><Building2 size={14}/> Centro de Custo</label>
-                                    <input className="input-premium border-purple-200 focus:border-purple-500 focus:ring-purple-500/20" placeholder="Ex: Comercial, 102030" value={f.centroCusto} onChange={e => setF({...f, centroCusto: e.target.value})} />
+                                    <label className="label-premium text-purple-700"><Building2 size={13}/> Centro de Custo</label>
+                                    <input className="input-premium border-purple-200 text-xs" placeholder="Ex: 2232" value={f.centroCusto} onChange={e => setF({...f, centroCusto: e.target.value})} />
                                 </div>
                             </div>
                         )}
                     </div>
 
-                    <div className="pt-4 flex justify-end">
-                        <button type="submit" className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95">
-                            <Save size={20}/> Salvar Registo na Cloud
+                    <div className="flex justify-end">
+                        <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm">
+                            <Save size={16}/> Salvar Registro
                         </button>
                     </div>
                 </form>
@@ -1203,58 +1732,71 @@
         }
 
         function FormLote({ onSave }) {
-            const [l, setL] = useState([]); const [p, setP] = useState(false);
+            const [l, setL] = useState([]); 
+            const [p, setP] = useState(false);
+
             const handleFiles = async (e) => {
-                setP(true); const files = Array.from(e.target.files);
+                setP(true); 
+                const files = Array.from(e.target.files);
                 const novas = await Promise.all(files.map(async file => {
                     const d = await extrairDados(file);
-                    const b64 = await new Promise(res => { const r = new FileReader(); r.onload = ev => res(ev.target.result); r.readAsDataURL(file); });
+                    const b64 = await new Promise(res => { 
+                        const r = new FileReader(); 
+                        r.onload = ev => res(ev.target.result); 
+                        r.readAsDataURL(file); 
+                    });
                     const definedStatus = d.isAmostra ? 'aguardando_amostra' : 'pendente';
-                    return { ...d, id: gerarID(), arquivoNome: file.name, arquivoDataUrl: b64, status: definedStatus, dataUpload: new Date().toISOString() };
+                    return { 
+                        ...d, 
+                        id: gerarID(), 
+                        arquivoNome: file.name, 
+                        arquivoDataUrl: b64, 
+                        status: definedStatus, 
+                        dataUpload: new Date().toISOString() 
+                    };
                 }));
-                setL(prev => [...prev, ...novas]); setP(false);
+                setL(prev => [...prev, ...novas]); 
+                setP(false);
             };
+
             return (
                 <div className="space-y-6">
-                    <div className="bg-white p-16 border-2 border-dashed border-slate-300 rounded-3xl text-center relative group hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer shadow-sm">
+                    <div className="bg-white p-12 border-2 border-dashed border-slate-300 rounded-3xl text-center relative group hover:border-blue-400 hover:bg-blue-50/40 transition-all cursor-pointer shadow-soft">
                         <input type="file" multiple accept=".xml,.pdf" className="absolute inset-0 opacity-0 cursor-pointer z-10" onChange={handleFiles} />
-                        <div className={`mx-auto w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 transition-all shadow-sm border border-blue-100 group-hover:scale-110 group-hover:shadow-md ${p ? 'animate-pulse' : ''}`}>
-                            <UploadCloud size={36} />
+                        <div className={`mx-auto w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-4 transition-transform border border-blue-100 group-hover:scale-105 ${p ? 'animate-pulse' : ''}`}>
+                            <UploadCloud size={30} />
                         </div>
-                        <p className="font-extrabold text-2xl text-slate-800">Arraste os ficheiros para aqui</p>
-                        <p className="text-slate-500 font-medium text-sm mt-2">Suporte para múltiplos XMLs e PDFs simultaneamente.</p>
+                        <p className="font-extrabold text-lg text-slate-800">Arraste múltiplos arquivos aqui</p>
+                        <p className="text-slate-500 font-medium text-xs mt-1">Carregue simultaneamente dezenas de XMLs ou PDFs.</p>
                     </div>
                     
                     {l.length > 0 && (
-                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-md animate-fade-in">
-                            <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex justify-between items-center">
-                                <span className="font-extrabold text-slate-800 text-sm bg-white px-3 py-1 rounded-md border border-slate-200 shadow-sm">{l.length} Ficheiros Lidos</span>
-                                <button onClick={() => setL([])} className="text-sm font-bold text-red-500 hover:text-red-700 transition-colors bg-red-50 px-3 py-1.5 rounded-md hover:bg-red-100">Limpar Fila</button>
+                        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-soft animate-fade-in">
+                            <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center text-xs">
+                                <span className="font-extrabold text-slate-800 bg-white px-2.5 py-1 rounded border border-slate-200">
+                                    {l.length} {l.length === 1 ? 'Arquivo Pronto' : 'Arquivos Prontos'}
+                                </span>
+                                <button onClick={() => setL([])} className="text-rose-600 font-bold hover:underline">Limpar Lista</button>
                             </div>
-                            <div className="max-h-[400px] overflow-y-auto">
-                                <table className="w-full text-sm text-left">
-                                    <tbody className="divide-y divide-slate-100">
-                                        {l.map(x => (
-                                            <tr key={x.id} className="hover:bg-blue-50/30 transition-colors">
-                                                <td className="px-6 py-4 text-slate-600 font-semibold truncate max-w-[200px]">{x.arquivoNome}</td>
-                                                <td className="px-6 py-4 font-extrabold text-slate-800">#{x.numero || '---'}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2.5 py-1 rounded-md text-xs font-bold border shadow-sm ${x.status === 'aguardando_amostra' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                                                        {x.status === 'aguardando_amostra' ? 'Amostra' : 'Pendente'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-extrabold text-slate-800">R$ {parseFloat(x.valor || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors shadow-sm"><Trash2 size={18}/></button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 text-xs">
+                                {l.map(x => (
+                                    <div key={x.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50">
+                                        <div>
+                                            <span className="font-bold text-slate-800 block">NF #{x.numero || 'S/N'}</span>
+                                            <span className="text-slate-400 truncate max-w-xs block text-[11px]">{x.arquivoNome}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-mono-numbers font-bold text-slate-700">R$ {formatMoeda(x.valor)}</span>
+                                            <button onClick={() => setL(l.filter(it => it.id !== x.id))} className="text-slate-400 hover:text-rose-600 p-1">
+                                                <Trash2 size={15}/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="p-5 bg-slate-50 border-t border-slate-200">
-                                <button onClick={() => { onSave(l); setL([]); }} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold hover:bg-blue-700 hover:shadow-lg transition-all flex justify-center items-center gap-2 transform active:scale-[0.99]">
-                                    <Save size={20}/> Confirmar Importação de {l.length} Registos para a Cloud
+                            <div className="p-4 bg-slate-50 border-t border-slate-200">
+                                <button onClick={() => { onSave(l); setL([]); }} className="w-full bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-all flex justify-center items-center gap-2 text-xs">
+                                    <Save size={16}/> Salvar {l.length} {l.length === 1 ? 'Registo' : 'Registos'} no Banco de Dados
                                 </button>
                             </div>
                         </div>
@@ -1266,18 +1808,23 @@
         function SidebarItem({ active, onClick, icon, label, expanded, badge }) {
             return (
                 <div className="px-1">
-                    <button onClick={onClick} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-[13px] relative ${active ? 'sidebar-active bg-blue-50 shadow-sm border border-blue-100/50' : 'text-slate-600 hover:bg-slate-100 font-bold border border-transparent'}`}>
-                        <div className="flex items-center gap-3.5">
-                            <span className={`${active ? 'text-blue-600 drop-shadow-sm' : 'text-slate-400'}`}>{icon}</span> 
+                    <button 
+                        onClick={onClick} 
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all text-xs relative ${active ? 'sidebar-active-brand' : 'text-slate-600 hover:bg-slate-100 font-bold'}`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <span className={`${active ? 'text-blue-600' : 'text-slate-400'}`}>{icon}</span> 
                             <span className={!expanded ? 'hidden' : ''}>{label}</span>
                         </div>
-                        {badge > 0 && expanded && <span className="bg-amber-100 border border-amber-200 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-extrabold shadow-sm">{badge}</span>}
+                        {badge > 0 && expanded && (
+                            <span className="bg-amber-100 border border-amber-200 text-amber-800 text-[10px] px-1.5 py-0.5 rounded-full font-extrabold">
+                                {badge}
+                            </span>
+                        )}
                     </button>
                 </div>
             );
         }
-        
-        function formatData(s) { if(!s) return '-'; const p = s.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s; }
 
         const root = createRoot(document.getElementById('root'));
         root.render(<App />);
